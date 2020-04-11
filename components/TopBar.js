@@ -3,15 +3,7 @@ import "@blueprintjs/core/lib/css/blueprint.css";
 import { Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Classes, Alignment, Button, Drawer } from "@blueprintjs/core";
 import IsAuthenticated from "./auth/IsAuthenticated";
 import { useFirebase } from "react-redux-firebase";
-import { useSelector } from "react-redux";
-function Bookmarks() {
-    const firebase = useFirebase();
-    const auth = useSelector(state => state.firebase.auth);
-    const bookmarks = auth
-    return <ul>
-        {JSON.stringify(bookmarks)}
-    </ul>
-}
+import { Bookmarks } from "./Bookmarks";
 export function TopBar() {
     const firebase = useFirebase();
     const [isBookmarksVisible, setIsBookmarksVisible] = useState(false);

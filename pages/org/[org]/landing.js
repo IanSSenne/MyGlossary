@@ -38,9 +38,7 @@ function Page({ children, org }) {
                 <Redirect target="/"></Redirect>
             </IsAuthenticated>
             <IsAuthenticated>
-                <Card>
-                    <h1 className={Classes.HEADING}>create organization "{org}"</h1>
-                </Card>
+                <Redirect target={`/org/${org}/view`}></Redirect>
             </IsAuthenticated>
         </div>
     );

@@ -62,8 +62,9 @@ function Page({ children }) {
               } else {
                 setError("");
                 firebase.ref("org").child(orgName).set({ owner: auth.uid });
-                firebase.ref("users").child(auth.uid).child("ownedOrganizations").push({ name: orgName });
-                window.location.replace("/org/" + orgName + "/initialize");
+                firebase.ref("users").child(auth.uid).child("owned").push({ name: orgName });
+                firebase.ref("users").child(auth.uid).child("joined").push({ name: orgName });
+                window.location.replace("/org/" + orgName + "/landing");
               }
             }
           }} disabled={Intent.DANGER === orgValidatorIntent || !orgValidatorLength} />
