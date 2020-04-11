@@ -6,17 +6,18 @@ import { useFirebase } from "react-redux-firebase";
 import { Bookmarks } from "./Bookmarks";
 import IsAdmin from "./auth/IsAdmin";
 export function TopBar(props) {
-    console.log(props);
+    const { org } = props;
     const firebase = useFirebase();
     const [isBookmarksVisible, setIsBookmarksVisible] = useState(false);
     return <>
         <Navbar className={Classes.DARK}>
             <NavbarGroup align={Alignment.LEFT}>
                 <NavbarHeading>MyGlossary</NavbarHeading>
-                <NavbarDivider />
-                <Button className={Classes.MINIMAL} icon="home" text="Home" onClick={() => {
-                    window.location.replace("/home");
-                }} />
+                {org && <>
+                    <NavbarDivider />
+                    <NavbarHeading>{org}</NavbarHeading>
+                    <NavbarDivider />
+                </>}
 
                 <IsAuthenticated>
                     <Button className={Classes.MINIMAL} icon="applications" text="My Organizations" onClick={

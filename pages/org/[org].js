@@ -24,7 +24,7 @@ function Page({ children, org }) {
     }
     return (
         <div>
-            <TopBar></TopBar>
+            <TopBar org={org}></TopBar>
             <IsAuthenticated target="unauthenticated">
                 <Redirect target="/"></Redirect>
             </IsAuthenticated>

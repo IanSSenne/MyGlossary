@@ -36,7 +36,7 @@ function AdminUserInterface(props) {
                 {!meta.accepted && (<>
                     <Button icon="plus" intent={Intent.SUCCESS} text={"accept user"} onClick={() => {
                         firebase.ref(`org/${org}/user/${uid}/accepted`).set(true);
-                        firebase.ref(`users/${uid}/joined`).push(org);
+                        firebase.ref(`users/${uid}/joined`).push({ name: org });
                         setUserUIVisible(false);
                     }}></Button>
                     <Button icon="plus" intent={Intent.DANGER} text={"decline user"} onClick={() => {
@@ -90,6 +90,9 @@ function Page({ children, org }) {
     useEffect(() => {
         firebase.ref(`org/${org}/user`).orderByValue().on("value", async (snapshot) => {
             const users = snapshot.val();
+            if (!users) {
+                return;
+            }
             const val = Object.entries(users);
             const verified = [];
             const unverified = [];
@@ -98,11 +101,9 @@ function Page({ children, org }) {
             for (let i = 0; i < val.length; i++) {
                 p.push(new Promise((resolve) => {
                     firebase.ref(`users/${val[i][0]}/displayName`).on("value", (snapshot) => {
-                        console.log(snapshot.val());
                         resolve(snapshot.val());
                     })
                 }).then((data) => {
-                    console.log(data);
                     if (val[i][1].accepted) {
                         verified.push([val[i][0], data, users[val[i][0]]]);
                     } else {
