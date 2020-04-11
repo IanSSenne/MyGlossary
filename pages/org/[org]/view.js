@@ -33,7 +33,7 @@ function Page({ children, org }) {
     }
     return (
         <div>
-            <TopBar></TopBar>
+            <TopBar org={org}></TopBar>
             <IsAuthenticated target="unauthenticated">
                 <Redirect target="/"></Redirect>
             </IsAuthenticated>
@@ -58,14 +58,12 @@ function Page({ children, org }) {
                 </div>}
 
                 {addWordVisible && <Dialog
-                    {...{
-                        autoFocus: true,
-                        canEscapeKeyClose: true,
-                        canOutsideClickClose: true,
-                        enforceFocus: true,
-                        isOpen: false,
-                        usePortal: true
-                    }}
+
+                    autoFocus={true}
+                    canEscapeKeyClose={true}
+                    canOutsideClickClose={true}
+                    enforceFocus={true}
+
                     isOpen={true}
                     icon="info-sign"
                     onClose={() => {

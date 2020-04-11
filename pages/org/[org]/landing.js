@@ -11,21 +11,21 @@ import { useFirebase } from "react-redux-firebase";
 
 
 function Page({ children, org }) {
-    const firebase = useFirebase();
-    useEffect(() => {
-        async function exec() {
-            if (!(await ref.exists(firebase.ref("org/" + org)))) {
-                window.location.replace(`/error?error=${encodeURI(`organization "${org}" does not exist and therefore can not be initialized.`)}`);
-            } else {
-                firebase.ref("org/" + org).orderByKey().once("value", (snapshot) => {
-                    if (!Boolean(temp1.val().isInitialized)) {
-                        window.location.replace(`/error?error=${encodeURI(`organization "${org}" has already been initialized and therefore can not be initialized.`)}`);
-                    }
-                });
-            }
-        }
-        exec();
-    })
+    // const firebase = useFirebase();
+    // useEffect(() => {
+    //     async function exec() {
+    //         if (!(await ref.exists(firebase.ref("org/" + org)))) {
+    //             window.location.replace(`/error?error=${encodeURI(`organization "${org}" does not exist and therefore can not be initialized.`)}`);
+    //         } else {
+    //             firebase.ref("org/" + org).orderByKey().once("value", (snapshot) => {
+    //                 if (!Boolean(snapshot.val().isInitialized)) {
+    //                     window.location.replace(`/error?error=${encodeURI(`organization "${org}" has already been initialized and therefore can not be initialized.`)}`);
+    //                 }
+    //             });
+    //         }
+    //     }
+    //     exec();
+    // })
     // const auth = useSelector(state => state.firebase.auth)
     // const [orgName, setOrgName] = useState("");
     // const [orgValidatorIntent, setOrgValidatorIntent] = useState(Intent.NONE);
@@ -33,7 +33,6 @@ function Page({ children, org }) {
     // const [error, setError] = useState("");
     return (
         <div>
-            <TopBar></TopBar>
             <IsAuthenticated target="unauthenticated">
                 <Redirect target="/"></Redirect>
             </IsAuthenticated>

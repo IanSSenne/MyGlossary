@@ -4,7 +4,9 @@ import { Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Classes, Alignment, 
 import IsAuthenticated from "./auth/IsAuthenticated";
 import { useFirebase } from "react-redux-firebase";
 import { Bookmarks } from "./Bookmarks";
-export function TopBar() {
+import IsAdmin from "./auth/IsAdmin";
+export function TopBar(props) {
+    console.log(props);
     const firebase = useFirebase();
     const [isBookmarksVisible, setIsBookmarksVisible] = useState(false);
     return <>
@@ -36,6 +38,13 @@ export function TopBar() {
             </IsAuthenticated>
             <IsAuthenticated>
                 <NavbarGroup align={Alignment.RIGHT}>
+
+                    {props.org && <IsAdmin org={props.org}>
+                        <NavbarDivider />
+                        <Button className={Classes.MINIMAL} onClick={() => {
+                            window.location.replace(`/org/${props.org}/admin`);
+                        }}>Admin</Button>
+                    </IsAdmin>}
                     <NavbarDivider />
 
                     <Button className={Classes.MINIMAL} icon="book" onClick={() => {
@@ -53,12 +62,12 @@ export function TopBar() {
             icon="info-sign"
             isOpen={isBookmarksVisible}
             hasBackdrop={false}
+            title="Bookmarks!"
             size={Drawer.SIZE_SMALL}
             canOutsideClickClose={true}
             canEscapeKeyClose={true}
             onClose={() => setIsBookmarksVisible(false)}
         >
-            <h1 className={Classes.HEADING} style={{ textAlign: "center", paddingTop: "2em" }}>Bookmarks</h1>
             <Bookmarks></Bookmarks>
         </Drawer>
     </>;

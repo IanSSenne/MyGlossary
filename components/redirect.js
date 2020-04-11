@@ -3,7 +3,7 @@ export default ({ target, auto = true, instant = false }) => {
     useEffect(() => {
         const id = setTimeout(() => {
             if (globalThis.location && auto) globalThis.location.replace(target);
-        }, instant ? 0 : 500)
+        }, instant ? 0 : 1000)
         return () => {
             clearTimeout(id);
         }
