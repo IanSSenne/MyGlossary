@@ -4,17 +4,37 @@ import React, { useEffect, useState } from "react";
 import { Wrap } from "../../../components/wrap";
 import IsAuthenticated from "../../../components/auth/IsAuthenticated";
 import { TopBar } from "../../../components/TopBar";
-import { Card, Classes, Dialog, Button, InputGroup, HTMLSelect, Tag, Intent, Navbar, Alignment, Popover, Menu, MenuItem, Position, Tooltip } from "@blueprintjs/core";
+import { Card, Classes, Dialog, Button, InputGroup, HTMLSelect, Tag, Intent, Navbar, Alignment, Popover, Menu, MenuItem, Position, Tooltip, TextArea } from "@blueprintjs/core";
 import Redirect from "../../../components/redirect";
 import { useFirebase } from "react-redux-firebase";
+import { useSelector } from "react-redux";
 function Word(props) {
-	const { word } = props;
-	return <Card className="word-container" interactive style={{ height: "200px", minWidth: "200px", display: "table-cell", position: "relative", margin: "5px" }}>
-		<div style={{ textAlign: "center", color: "gray", position: "absolute", top: "50%", transform: "translateY(-50%)" }}>
-			<h3>{word.word}</h3>
-			{word.tags.map((_, i) => <Tag key={i} minimal interactive intent={_.isSystemTag ? Intent.SUCCESS : Intent.NONE}>{_.tag}</Tag>)}
-		</div>
-	</Card>;
+	const { word, uid, org } = props;
+	const firebase = useFirebase();
+	const auth = useSelector(state => state.firebase.auth);
+	const [wordEditorVisible, setWordEditorVisible] = useState(false);
+	return <>
+		<Card className="word-container" interactive onClick={() => setWordEditorVisible(true)} style={{ height: "200px", minWidth: "200px" }}>
+			<div style={{ textAlign: "center", color: "black" }}>
+				<h3>{word.word}</h3>
+				<p>{word.definition}</p>
+				{word.tags.map((_, i) => <Tag key={i} minimal interactive intent={_.isSystemTag ? Intent.SUCCESS : Intent.NONE}>{_.tag}</Tag>)}
+			</div>
+		</Card>
+		<Dialog isOpen={wordEditorVisible} title={`Edit "${word.word}"`} onClose={() => setWordEditorVisible(false)}>
+			<div className={Classes.DIALOG_BODY}>
+			</div>
+			<div className={Classes.DIALOG_FOOTER}>
+				<div className={Classes.DIALOG_FOOTER_ACTIONS}>
+					<Button icon="bookmark" onClick={() => {
+						firebase.ref(`users/${auth.uid}/bookmarked`).push({ word: uid, org });
+					}} small></Button>
+					<Button onClick={() => {
+					}}>Save</Button>
+				</div>
+			</div>
+		</Dialog>
+	</>;
 }
 
 function Page({ org }) {
@@ -24,6 +44,7 @@ function Page({ org }) {
 	const [newWord, setNewWord] = useState("");
 	const [newWordInitialTag, setNewWordInitialTag] = useState("term");
 	const [sortType, setSortType] = useState("initial");
+	const [newWordDef, setNewWordDef] = useState("");
 	// const auth = useSelector(state => state.firebase.auth);
 	if (!Boolean(words)) {
 		const orgRef = firebase.ref(`/org/${org}`);
@@ -60,12 +81,9 @@ function Page({ org }) {
 							<Button icon={sortIcons[sortType]}></Button>
 						</Tooltip>
 					</Popover>
-					{/* <HTMLSelect>
-
-						<option value="stored"><Icon>sort</Icon></option>
-						<option value="a-z"><Icon>sort-alphabetical</Icon></option>
-						<option value="z-a"><Icon>sort-alphabetical-desc</Icon></option>
-					</HTMLSelect> */}
+					<Tooltip content="Filter Results" position={Position.BOTTOM_LEFT}>
+						<Button icon="filter-list" onClick={() => setAddWordVisible(true)}></Button>
+					</Tooltip>
 				</Navbar.Group>
 				<Navbar.Group align={Alignment.RIGHT}>
 					<Tooltip content="Add a term!" position={Position.BOTTOM_LEFT}>
@@ -87,15 +105,15 @@ function Page({ org }) {
 					{(sortType === "initial" ? words : words.sort((a, b) => {
 						if (sortType === "a-z") return a[1].word.toLowerCase().localeCompare(b[1].word.toLowerCase());
 						return b[1].word.toLowerCase().localeCompare(a[1].word.toLowerCase());
-					})).map(_ => <Word key={_[0]} word={_[1]}></Word>)}
+					})).map(_ => <Word key={_[0]} org={org} uid={_[0]} word={_[1]}></Word>)}
 
 				</div>}
-				{addWordVisible && <Dialog
+				<Dialog
 					autoFocus={true}
 					canEscapeKeyClose={true}
 					canOutsideClickClose={true}
 					enforceFocus={true}
-					isOpen={true}
+					isOpen={addWordVisible}
 					icon="info-sign"
 					onClose={() => {
 						setAddWordVisible(false);
@@ -107,6 +125,9 @@ function Page({ org }) {
 						<p>Please enter the term to add</p>
 						<InputGroup onChange={(evt) => setNewWord(evt.target.value)} value={newWord}></InputGroup>
 						<br />
+						<p>definition</p>
+						<TextArea fill value={newWordDef} onChange={(evt) => setNewWordDef(evt.target.value)}></TextArea>
+						<br />
 						<p>Type</p>
 						<HTMLSelect value={newWordInitialTag} onChange={(evt) => setNewWordInitialTag(evt.target.value)}>
 							<option value="term">Glossary Term</option>
@@ -116,14 +137,15 @@ function Page({ org }) {
 					<div className={Classes.DIALOG_FOOTER}>
 						<div className={Classes.DIALOG_FOOTER_ACTIONS}>
 							<Button onClick={() => {
-								firebase.ref(`org/${org}/words`).push({ word: newWord, tags: [{ isRemovable: false, tag: newWordInitialTag, isSystemTag: true }] });
+								firebase.ref(`org/${org}/words`).push({ word: newWord, tags: [{ isRemovable: false, tag: newWordInitialTag, isSystemTag: true }], definition: newWordDef });
 								setNewWord("");
 								setNewWordInitialTag("term");
 								setAddWordVisible(false);
+								setNewWordDef("");
 							}}>Add</Button>
 						</div>
 					</div>
-				</Dialog>}
+				</Dialog>
 			</IsAuthenticated>
 		</div>
 	);

@@ -15,7 +15,9 @@ export function TopBar(props) {
                 <NavbarHeading>MyGlossary</NavbarHeading>
                 {org && <>
                     <NavbarDivider />
-                    <NavbarHeading>{org}</NavbarHeading>
+                    <Button className={Classes.MINIMAL} text={org} onClick={() => {
+                        window.location.replace(`/org/${org}/landing`)
+                    }} />
                     <NavbarDivider />
                 </>}
 
@@ -68,8 +70,9 @@ export function TopBar(props) {
             canOutsideClickClose={true}
             canEscapeKeyClose={true}
             onClose={() => setIsBookmarksVisible(false)}
+            style={{ overflowY: "scroll" }}
         >
-            <Bookmarks></Bookmarks>
+            <Bookmarks org={org}></Bookmarks>
         </Drawer>
     </>;
 }

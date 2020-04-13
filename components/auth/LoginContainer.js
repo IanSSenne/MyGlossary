@@ -27,7 +27,7 @@ export default function LoginContainer() {
                 }}
                 firebaseAuth={auth}
             />
-            <Card>
+            {/* <Card> 
 
                 <InputGroup
                     leftIcon="envelope"
@@ -40,7 +40,7 @@ export default function LoginContainer() {
                     leftIcon="lock"
                     type="password"
                 />
-            </Card>
+            </Card> */}
 
         </IsAuthenticated>
         <IsAuthenticated>
