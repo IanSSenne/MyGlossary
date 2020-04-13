@@ -7,12 +7,29 @@ import { TopBar } from "../../../components/TopBar";
 import { Card, Classes, Dialog, Button, InputGroup, HTMLSelect, Tag, Intent, Navbar, Alignment, Popover, Menu, MenuItem, Position, Tooltip, TextArea } from "@blueprintjs/core";
 import Redirect from "../../../components/redirect";
 import { useFirebase } from "react-redux-firebase";
-import { useSelector } from "react-redux";
+import { useSelector, useStore } from "react-redux";
+import { ref } from "../../../helpers/fb";
+function hashCode(str) {
+	var hash = 0, i, chr;
+	if (str.length === 0) return hash;
+	for (i = 0; i < str.length; i++) {
+		chr = str.charCodeAt(i);
+		hash = ((hash << 5) - hash) + chr;
+		hash |= 0; // Convert to 32bit integer
+	}
+	return hash;
+};
 function Word(props) {
 	const { word, uid, org } = props;
 	const firebase = useFirebase();
 	const auth = useSelector(state => state.firebase.auth);
 	const [wordEditorVisible, setWordEditorVisible] = useState(false);
+	const [isBookmarked, setIsBookmarked] = useState();
+	if (isBookmarked === undefined) {
+		(async () => {
+			setIsBookmarked(await ref.exists(firebase.ref(`users/${auth.uid}/bookmarked/${hashCode(org).toString(36)}-${hashCode(uid).toString(36)}`)))
+		})();
+	}
 	return <>
 		<Card className="word-container" interactive onClick={() => setWordEditorVisible(true)} style={{ height: "200px", minWidth: "200px" }}>
 			<div style={{ textAlign: "center", color: "black" }}>
@@ -26,8 +43,15 @@ function Word(props) {
 			</div>
 			<div className={Classes.DIALOG_FOOTER}>
 				<div className={Classes.DIALOG_FOOTER_ACTIONS}>
-					<Button icon="bookmark" onClick={() => {
-						firebase.ref(`users/${auth.uid}/bookmarked`).push({ word: uid, org });
+					<Button icon="bookmark" intent={isBookmarked ? Intent.SUCCESS : Intent.NONE} onClick={async () => {
+						const path = firebase.ref(`users/${auth.uid}/bookmarked/${hashCode(org).toString(36)}-${hashCode(uid).toString(36)}`);
+						if (await ref.exists(path)) {
+							path.remove();
+							setIsBookmarked(false);
+						} else {
+							path.set({ word: uid, org });
+							setIsBookmarked(true);
+						}
 					}} small></Button>
 					<Button onClick={() => {
 					}}>Save</Button>

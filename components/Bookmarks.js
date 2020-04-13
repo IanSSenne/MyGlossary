@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useFirebase } from "react-redux-firebase";
 import { useSelector } from "react-redux";
-import { Card, Classes } from "@blueprintjs/core";
+import { Card, Classes, Divider } from "@blueprintjs/core";
 function Bookmark(props) {
     const [, word] = props.book;
     const [dbword, setdbword] = useState();
@@ -9,13 +9,14 @@ function Bookmark(props) {
     if (!dbword) {
         firebase.ref(`/org/${word.org}/words/${word.word}`).on("value", (snapshot) => {
             setdbword(snapshot.val());
-            console.log(snapshot.val());
         });
         return null;
     }
     return <Card interactive onClick={() => { }}>
         <h1 className={Classes.HEADING}>{dbword.word}</h1>
         <p>{dbword.definition}</p>
+        <Divider></Divider>
+        <p style={{ color: "gray" }} className={Classes.SMALL}>in {word.org}</p>
     </Card>
 }
 export function Bookmarks() {
