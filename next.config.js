@@ -37,10 +37,7 @@ module.exports = withSass(withCSS({
     firebaseProjectID: process.env.FIREBASE_PROJECT_ID,
     firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET,
 
-    tMDBAPIKey: process.env.TMDB_API_KEY,
-    tMDBAPIURL: 'https://api.themoviedb.org/3',
-
-    buildDate: (new Date()).toISOString(),
+    buildDate:  (new Date()).toISOString(),
     nodeVersion: process.version,
   },
 

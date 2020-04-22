@@ -2,9 +2,11 @@ import { useSelector } from "react-redux";
 import { isLoaded, isEmpty } from "react-redux-firebase";
 import { useState, useEffect } from "react";
 export function AuthenticationStatus(auth) {
-    return isEmpty(auth)
-        ? "unauthenticated"
-        : "authenticated"
+    return !isLoaded(auth) ?
+        "unknown" :
+        isEmpty(auth)
+            ? "unauthenticated"
+            : "authenticated"
 }
 export default function IsAuthenticated({ children, target = "authenticated" }) {
     const [isAuthenticated, setAuthenticated] = useState("unknown");
