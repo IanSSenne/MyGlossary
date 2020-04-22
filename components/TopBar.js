@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import "@blueprintjs/core/lib/css/blueprint.css";
-import { Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Classes, Alignment, Button, Drawer } from "@blueprintjs/core";
+import { Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Classes, Alignment, Button, Drawer, AnchorButton } from "@blueprintjs/core";
 import IsAuthenticated from "./auth/IsAuthenticated";
 import { useFirebase } from "react-redux-firebase";
 import { Bookmarks } from "./Bookmarks";
 import IsAdmin from "./auth/IsAdmin";
+import Link from "next/link";
 export function TopBar(props) {
     const { org } = props;
     const firebase = useFirebase();
@@ -15,18 +16,16 @@ export function TopBar(props) {
                 <NavbarHeading>MyGlossary</NavbarHeading>
                 {org && <>
                     <NavbarDivider />
-                    <Button className={Classes.MINIMAL} text={org} onClick={() => {
-                        window.location.replace(`/org/${org}/landing`)
-                    }} />
+                    <Link href="/org/[org]/landing" as={`/org/${org}/landing`}>
+                        <AnchorButton className={Classes.MINIMAL} text={org} />
+                    </Link>
                     <NavbarDivider />
                 </>}
 
                 <IsAuthenticated>
-                    <Button className={Classes.MINIMAL} icon="applications" text="My Organizations" onClick={
-                        () => {
-                            window.location.replace("/portal")
-                        }
-                    } />
+                    <Link href="/portal">
+                        <AnchorButton className={Classes.MINIMAL} icon="applications" text="My Organizations" />
+                    </Link>
                 </IsAuthenticated>
             </NavbarGroup>
 
@@ -34,9 +33,9 @@ export function TopBar(props) {
 
                 <NavbarGroup align={Alignment.RIGHT}>
                     <NavbarDivider />
-                    <Button onClick={() => {
-                        window.location.replace("/login");
-                    }} className={Classes.MINIMAL}>Login</Button>
+                    <Link href="/login">
+                        <AnchorButton className={Classes.MINIMAL}>Login</AnchorButton>
+                    </Link>
                 </NavbarGroup>
             </IsAuthenticated>
             <IsAuthenticated>
@@ -44,9 +43,9 @@ export function TopBar(props) {
 
                     {props.org && <IsAdmin org={props.org}>
                         <NavbarDivider />
-                        <Button className={Classes.MINIMAL} onClick={() => {
-                            window.location.replace(`/org/${props.org}/admin`);
-                        }}>Admin</Button>
+                        <Link href="/org/[org]/admint" as={`/org/${props.org}/admin`}>
+                            <AnchorButton className={Classes.MINIMAL}>Admin</AnchorButton>
+                        </Link>
                     </IsAdmin>}
                     <NavbarDivider />
 

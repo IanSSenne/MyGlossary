@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { useFirebase } from "react-redux-firebase";
-import { useSelector, useStore } from "react-redux";
+import { useSelector } from "react-redux";
 import { Wrap } from "../components/wrap";
 import IsAuthenticated from "../components/auth/IsAuthenticated";
 import { TopBar } from "../components/TopBar";
 import { InputGroup, Card, Classes, Intent, Button } from "@blueprintjs/core";
 import { ref } from "../helpers/fb";
+import { useRouter } from "next/router";
 
 
 function Page({ children }) {
@@ -15,6 +16,7 @@ function Page({ children }) {
   const [orgValidatorIntent, setOrgValidatorIntent] = useState(Intent.NONE);
   const [orgValidatorLength, setOrgValidatorLength] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
   return (
     <div>
       <TopBar></TopBar>
@@ -64,7 +66,7 @@ function Page({ children }) {
                 firebase.ref("org").child(orgName).set({ owner: auth.uid });
                 firebase.ref("users").child(auth.uid).child("owned").push({ name: orgName });
                 firebase.ref("users").child(auth.uid).child("joined").push({ name: orgName });
-                window.location.replace("/org/" + orgName + "/landing");
+                router.push("/org/" + orgName + "/landing");
               }
             }
           }} disabled={Intent.DANGER === orgValidatorIntent || !orgValidatorLength} />

@@ -4,13 +4,16 @@ import { useSelector } from "react-redux";
 import { Wrap } from "../../components/wrap";
 import { TopBar } from "../../components/TopBar";
 import * as Blueprint from "@blueprintjs/core";
-import { Button } from "@blueprintjs/core";
+import { AnchorButton } from "@blueprintjs/core";
 import IsAuthenticated from "../../components/auth/IsAuthenticated";
 import LoginContainer from "../../components/auth/LoginContainer";
 import { ref } from "../../helpers/fb";
+import { useRouter } from "next/router";
+import Link from "next/link";
 function Page(props) {
     const firebase = useFirebase()
-    const auth = useSelector(state => state.firebase.auth)
+    const auth = useSelector(state => state.firebase.auth);
+    const router = useRouter();
     return (
         <div>
             <TopBar></TopBar>
@@ -18,16 +21,18 @@ function Page(props) {
                 <Blueprint.Card>
                     <h1 className={Blueprint.Classes.HEADING}>Would you like to join {props.target}?</h1>
                     <Blueprint.Divider></Blueprint.Divider>
-                    <Button onClick={async () => {
+                    <AnchorButton onClick={async () => {
                         debugger;
                         if (!await ref.exists(firebase.ref(`org/${props.target}/user/${auth.uid}`))) {
                             firebase.ref(`org/${props.target}/user/${auth.uid}/accepted`).set(false);
-                            window.location.replace("/");
+                            router.push("/");
                         } else {
-                            window.location.replace("/error?error=" + encodeURI("unable to join as you are already awaiting acceptance or already in this organization."));
+                            router.replace("/error?error=" + encodeURI("unable to join as you are already awaiting acceptance or already in this organization."));
                         }
-                    }} intent={Blueprint.Intent.SUCCESS}>Yes</Button>
-                    <Button onClick={() => { window.location.replace("/") }} intent={Blueprint.Intent.DANGER}>No</Button>
+                    }} intent={Blueprint.Intent.SUCCESS}>Yes</AnchorButton>
+                    <Link href="/">
+                        <AnchorButton intent={Blueprint.Intent.DANGER}>No</AnchorButton>
+                    </Link>
                 </Blueprint.Card>
             </IsAuthenticated>
             <IsAuthenticated target="unauthenticated">

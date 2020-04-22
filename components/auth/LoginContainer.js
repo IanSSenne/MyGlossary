@@ -1,12 +1,13 @@
 import { useFirebase, isLoaded, isEmpty } from "react-redux-firebase"
 import React, { useState } from "react";
+import { useRouter } from "next/router";
 import IsAuthenticated from "./IsAuthenticated";
 import StyledFirebaseAuth from "react-firebaseui/StyledFirebaseAuth";
 import { Card, InputGroup } from "@blueprintjs/core";
 export default function LoginContainer() {
     const firebase = useFirebase();
     const auth = firebase.auth();
-    const [email, setEmail] = useState("");
+    const router = useRouter();
     const logout = () => {
         firebase.logout();
     };
@@ -19,7 +20,7 @@ export default function LoginContainer() {
                     callbacks: {
                         signInSuccessWithAuthResult: (authResult, redirectUrl) => {
                             firebase.handleRedirectResult(authResult).then(() => {
-                                window.location.replace("/");
+                                router.back();
                             });
                             return false;
                         },

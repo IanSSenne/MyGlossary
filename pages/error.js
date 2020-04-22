@@ -2,6 +2,7 @@ import React from "react";
 import { Wrap } from "../components/wrap";
 import { TopBar } from "../components/TopBar";
 import { AnchorButton } from "@blueprintjs/core";
+import Link from "next/link";
 
 
 function Page(props) {
@@ -10,7 +11,9 @@ function Page(props) {
         <div>
             <TopBar></TopBar>
             <h1>{props.error}</h1>
-            <AnchorButton href="/home">Goto Home</AnchorButton>
+            <Link href="/home">
+                <AnchorButton>Goto Home</AnchorButton>
+            </Link>
         </div >
     );
 }
