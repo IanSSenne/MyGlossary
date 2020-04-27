@@ -1,13 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { Wrap } from "../../components/wrap";
-import "react-quill/dist/quill.snow.css";
 import dynamic from 'next/dynamic'
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+import HTML from "../../components/HTML";
 
 
 function Page({ children, isServer }) {
+    const [text, setText] = useState("");
     return (
-        <ReactQuill onChange={(...args) => console.log(args)}></ReactQuill>
+        <>
+            <textarea value={text} readOnly></textarea>
+            <hr />
+            <HTML>{text}</HTML>
+        </>
     );
 }
 export default ({ isServer }) => <Wrap><Page isServer={isServer}></Page></Wrap>

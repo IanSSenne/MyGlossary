@@ -4,6 +4,17 @@ import { useSelector } from "react-redux";
 import { Wrap } from "../components/wrap";
 import { TopBar } from "../components/TopBar";
 import Link from "next/link";
+import { Card, Elevation } from "@blueprintjs/core";
+
+function Org({ org }) {
+  return <Link href="/org/[org]/landing" as={`/org/${org.name}/landing`}>
+    <a style={{ textDecoration: "none", color: "black" }}>
+      <Card interactive={true} elevation={Elevation.TWO} style={{ margin: "1em" }}>
+        <h2>{org.name}</h2>
+      </Card>
+    </a>
+  </Link>
+}
 function Page({ children, isServer }) {
   const firebase = useFirebase()
   const auth = useSelector(state => state.firebase.auth)
@@ -15,11 +26,7 @@ function Page({ children, isServer }) {
         let result = [];
         let entries = Object.values(val);
         for (const entry of entries) {
-          result.push(<li key={entry.name}>
-            <Link href="/org/[org]/landing" as={"/org/" + entry.name + "/landing"}>
-              <a>{entry.name}</a>
-            </Link>
-          </li>)
+          result.push(<Org key={entry.name} org={entry}></Org>)
         }
         // result.push();
         setOrgs(result);
@@ -29,7 +36,7 @@ function Page({ children, isServer }) {
   return (
     <div>
       <TopBar></TopBar>
-      {!Boolean(orgs) ? "loading..." : <ul>{orgs}</ul>}
+      {!Boolean(orgs) ? "loading..." : orgs}
     </div >
   );
 }

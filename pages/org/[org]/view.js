@@ -4,11 +4,17 @@ import React, { useEffect, useState } from "react";
 import { Wrap } from "../../../components/wrap";
 import IsAuthenticated from "../../../components/auth/IsAuthenticated";
 import { TopBar } from "../../../components/TopBar";
-import { Card, Classes, Dialog, Button, InputGroup, HTMLSelect, Tag, Intent, Navbar, Alignment, Popover, Menu, MenuItem, Position, Tooltip, TextArea } from "@blueprintjs/core";
+import { TagInput, Card, Classes, Dialog, Button, InputGroup, HTMLSelect, Tag, Intent, Navbar, Alignment, Popover, Menu, MenuItem, Position, Tooltip, TextArea, Icon } from "@blueprintjs/core";
 import Redirect from "../../../components/redirect";
 import { useFirebase } from "react-redux-firebase";
 import { useSelector, useStore } from "react-redux";
 import { ref } from "../../../helpers/fb";
+import TextEditor from "../../../components/TextEditor";
+import HTML from "../../../components/HTMLRender";
+import Link from "next/link";
+import "../../../scss/org/view.scss"
+import { useRouter } from "next/router";
+
 function hashCode(str) {
 	var hash = 0, i, chr;
 	if (str.length === 0) return hash;
@@ -30,15 +36,26 @@ function Word(props) {
 			setIsBookmarked(await ref.exists(firebase.ref(`users/${auth.uid}/bookmarked/${hashCode(org).toString(36)}-${hashCode(uid).toString(36)}`)))
 		})();
 	}
+	const [canEditorBeVisible, setCanEditorBeVisible] = useState(true);
+	const router = useRouter();
 	return <>
 		<Card className="word-container" interactive onClick={() => setWordEditorVisible(true)} style={{ height: "200px", minWidth: "200px" }}>
 			<div style={{ textAlign: "center", color: "black" }}>
 				<h3>{word.word}</h3>
-				<p>{word.definition}</p>
-				{word.tags.map((_, i) => <Tag key={i} minimal interactive intent={_.isSystemTag ? Intent.SUCCESS : Intent.NONE}>{_.tag}</Tag>)}
+				<div style={{
+					overflowY: "hidden",
+					height: "100px"
+				}}><HTML>{word.definition}</HTML></div>
+				{word.tags.map((_, i) =>
+					<a onClick={(e) => {
+						setCanEditorBeVisible(false);
+						router.replace(`/org/[org]/search/tag/[query]`, `/org/${org}/search/tag/${_.tag}`);
+					}} minimal>
+						<Tag className="word-tag" minimal interactive intent={_.isSystemTag ? Intent.SUCCESS : Intent.NONE}>{_.tag}</Tag>
+					</a>)}
 			</div>
 		</Card>
-		<Dialog isOpen={wordEditorVisible} title={`Edit "${word.word}"`} onClose={() => setWordEditorVisible(false)}>
+		<Dialog isOpen={canEditorBeVisible && wordEditorVisible} title={`Edit "${word.word}"`} onClose={() => setWordEditorVisible(false)}>
 			<div className={Classes.DIALOG_BODY}>
 			</div>
 			<div className={Classes.DIALOG_FOOTER}>
@@ -69,6 +86,7 @@ function Page({ org }) {
 	const [newWordInitialTag, setNewWordInitialTag] = useState("term");
 	const [sortType, setSortType] = useState("initial");
 	const [newWordDef, setNewWordDef] = useState("");
+	const [tags, setTags] = useState([]);
 	// const auth = useSelector(state => state.firebase.auth);
 	if (!Boolean(words)) {
 		const orgRef = firebase.ref(`/org/${org}`);
@@ -130,7 +148,6 @@ function Page({ org }) {
 						if (sortType === "a-z") return a[1].word.toLowerCase().localeCompare(b[1].word.toLowerCase());
 						return b[1].word.toLowerCase().localeCompare(a[1].word.toLowerCase());
 					})).map(_ => <Word key={_[0]} org={org} uid={_[0]} word={_[1]}></Word>)}
-
 				</div>}
 				<Dialog
 					autoFocus={true}
@@ -150,8 +167,23 @@ function Page({ org }) {
 						<InputGroup onChange={(evt) => setNewWord(evt.target.value)} value={newWord}></InputGroup>
 						<br />
 						<p>definition</p>
-						<TextArea fill value={newWordDef} onChange={(evt) => setNewWordDef(evt.target.value)}></TextArea>
+						{/* <TextArea fill value={newWordDef} onChange={(evt) => setNewWordDef(evt.target.value)}></TextArea> */}
+						<TextEditor value={newWordDef} onChange={(text) => setNewWordDef(text)}></TextEditor>
 						<br />
+						<p>Tags</p><TagInput
+							onChange={(values) => {
+								setTags(values);
+							}}
+							placeholder="Separate values with commas..."
+							rightElement={<Button
+								icon={tags.length > 1 ? <Icon icon="cross"></Icon> : null}
+								minimal={true}
+								onClick={() => {
+									setTags([]);
+								}}
+							/>}
+							values={tags}
+						/>
 						<p>Type</p>
 						<HTMLSelect value={newWordInitialTag} onChange={(evt) => setNewWordInitialTag(evt.target.value)}>
 							<option value="term">Glossary Term</option>
@@ -161,11 +193,19 @@ function Page({ org }) {
 					<div className={Classes.DIALOG_FOOTER}>
 						<div className={Classes.DIALOG_FOOTER_ACTIONS}>
 							<Button onClick={() => {
-								firebase.ref(`org/${org}/words`).push({ word: newWord, tags: [{ isRemovable: false, tag: newWordInitialTag, isSystemTag: true }], definition: newWordDef });
+								debugger;
+								firebase.ref(`org/${org}/words`).push({
+									word: newWord, tags: [{ isRemovable: false, tag: newWordInitialTag, isSystemTag: true }, ...tags.map(_ => {
+										return {
+											isRemovable: true, tag: _, isSystemTag: false
+										}
+									})], definition: newWordDef
+								});
 								setNewWord("");
 								setNewWordInitialTag("term");
 								setAddWordVisible(false);
 								setNewWordDef("");
+								setTags([]);
 							}}>Add</Button>
 						</div>
 					</div>

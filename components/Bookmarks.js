@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useFirebase } from "react-redux-firebase";
 import { useSelector } from "react-redux";
 import { Card, Classes, Divider } from "@blueprintjs/core";
+import HTML from "./HTMLRender";
+import Link from "next/link";
 function Bookmark(props) {
     const [, word] = props.book;
     const [dbword, setdbword] = useState();
@@ -12,12 +14,14 @@ function Bookmark(props) {
         });
         return null;
     }
-    return <Card interactive onClick={() => { }}>
-        <h1 className={Classes.HEADING}>{dbword.word}</h1>
-        <p>{dbword.definition}</p>
-        <Divider></Divider>
-        <p style={{ color: "gray" }} className={Classes.SMALL}>in {word.org}</p>
-    </Card>
+    return <Link>
+        <Card interactive onClick={() => { }}>
+            <h1 className={Classes.HEADING}>{dbword.word}</h1>
+            <HTML>{dbword.definition}</HTML>
+            <Divider></Divider>
+            <p style={{ color: "gray" }} className={Classes.SMALL}>in {word.org}</p>
+        </Card>
+    </Link>
 }
 export function Bookmarks() {
     const firebase = useFirebase();
