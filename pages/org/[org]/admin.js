@@ -4,11 +4,10 @@ import React, { useEffect, useState } from "react";
 import { Wrap } from "../../../components/wrap";
 import IsAuthenticated from "../../../components/auth/IsAuthenticated";
 import { TopBar } from "../../../components/TopBar";
-import { Card, Classes, Tree, Icon, Intent, Button, Dialog } from "@blueprintjs/core";
-import { ref } from "../../../helpers/fb";
+import { Classes, Tree, Intent, Button, Dialog, FileInput } from "@blueprintjs/core";
 import Redirect from "../../../components/redirect";
 import { useFirebase } from "react-redux-firebase";
-
+import papa from "papaparse";
 function AdminUserInterface(props) {
     const [uid, name, meta] = props.user;
     const { org } = props;
@@ -87,6 +86,9 @@ function Page({ children, org }) {
         ]
     };
     const [usableState, setUsableState] = useState(state);
+    const [fileUpload, setFileUpload] = useState("");
+    const [files, setFiles] = useState();
+    const [errors, setErrors] = useState([]);
     useEffect(() => {
         firebase.ref(`org/${org}/user`).orderByValue().on("value", async (snapshot) => {
             const users = snapshot.val();
@@ -133,18 +135,103 @@ function Page({ children, org }) {
             </IsAuthenticated>
             <IsAuthenticated>
                 <TopBar org={org}></TopBar>
-                <Tree
-                    onNodeClick={(node, _nodepath, e) => { }}
-                    onNodeCollapse={(node) => {
-                        node.isExpanded = false;
-                        setUsableState({ nodes: usableState.nodes, renderId: state.renderId + 1 });
-                    }}
-                    onNodeExpand={(node) => {
-                        node.isExpanded = true;
-                        setUsableState({ nodes: usableState.nodes, renderId: state.renderId + 1 });
-                    }}
-                    contents={usableState.nodes}>
-                </Tree>
+                <table>
+                    <tbody>
+                        <tr>
+                            <th>
+                                <Tree
+                                    onNodeClick={(node, _nodepath, e) => { }}
+                                    onNodeCollapse={(node) => {
+                                        node.isExpanded = false;
+                                        setUsableState({ nodes: usableState.nodes, renderId: state.renderId + 1 });
+                                    }}
+                                    onNodeExpand={(node) => {
+                                        node.isExpanded = true;
+                                        setUsableState({ nodes: usableState.nodes, renderId: state.renderId + 1 });
+                                    }}
+                                    contents={usableState.nodes}>
+                                </Tree>
+                            </th>
+                        </tr>
+                        <tr>
+                            <th>
+                                <div style={{ display: "flex", verticalAlign: "center" }}>
+                                    <FileInput text={fileUpload.length ? fileUpload : "Choose file..."} onInputChange={(evt) => {
+                                        console.log(evt.target.files);
+                                        setFiles(evt.target.files);
+                                        setFileUpload(evt.target.files[0].name);
+                                    }}
+                                        inputProps={{ accept: ".csv" }}
+                                        hasSelection={fileUpload.length > 0} />
+                                    <Button icon="import" disabled={!fileUpload.length} intent={Intent.SUCCESS} text="import" onClick={async () => {
+                                        const url = URL.createObjectURL(files[0]);
+
+                                        const csvString = await fetch(url).then(content => content.text());
+                                        const result = papa.parse(csvString);
+                                        if (result.errors.length) {
+                                            setErrors(result.errors.map(_ => _.message));
+                                            return;
+                                        } else {
+                                            URL.revokeObjectURL(url);//we has the meats(*data) so lets revoke the url. be nice to the browser and clean up after ourselves
+                                            const ores = Array.from(Array(result.data.length - 1), () => ({ meta: {} }));
+
+                                            const internal = ["type", "definition", "word"];
+                                            for (let i = 0; i < result.data[0].length; i++) {
+                                                const key = result.data[0][i].toLowerCase();
+                                                if (key != "") {
+                                                    for (let j = 1; j < result.data.length; j++) {
+                                                        if (internal.includes(key)) {
+                                                            ores[j - 1][key] = result.data[j][i];
+                                                        } else {
+                                                            ores[j - 1].meta[key] = result.data[j][i];
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            const errors = [];
+                                            debugger;
+                                            for (let i = 0; i < ores.length; i++) {
+                                                const current = ores[i];
+                                                if (current.type && current.definition && current.word) {
+                                                    current.type = current.type.toLowerCase();
+                                                    if ("term" !== current.type && "acronym" !== current.type) {
+                                                        errors.push([`invalid word type '${current.type}'`]);
+                                                    }
+                                                } else {
+                                                    errors.push(`term is missing required perameter {type='${current.type}',definition='${current.definition}',word='${current.word}'`);
+                                                }
+                                            }
+                                            if (errors.length) {
+                                                setErrors(errors);
+                                                return;
+                                            }
+                                            ores.forEach(uploadedWord => {
+                                                const word = {
+                                                    word: uploadedWord.word,
+                                                    definition: uploadedWord.definition,
+                                                    tags: [
+                                                        {
+                                                            isRemovable: false,
+                                                            isSystemTag: true,
+                                                            tag: uploadedWord.type
+                                                        }
+                                                    ],
+                                                    meta: uploadedWord.meta
+                                                };
+                                                firebase.ref(`/org/${org}/words`).push(word);
+                                            });
+                                        }
+
+                                    }}></Button>
+                                    <hr />
+                                    <ol>
+                                        {errors.map((v, i) => <li key={i}>{v}</li>)}
+                                    </ol>
+                                </div>
+                            </th>
+                        </tr>
+                    </tbody>
+                </table>
             </IsAuthenticated>
         </div>
     );

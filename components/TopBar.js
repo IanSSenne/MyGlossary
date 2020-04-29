@@ -45,7 +45,7 @@ export function TopBar(props) {
 
                     {props.org && <IsAdmin org={props.org}>
                         <NavbarDivider />
-                        <Link href="/org/[org]/admint" as={`/org/${props.org}/admin`}>
+                        <Link href="/org/[org]/admin" as={`/org/${props.org}/admin`}>
                             <AnchorButton className={Classes.MINIMAL}>Admin</AnchorButton>
                         </Link>
                     </IsAdmin>}

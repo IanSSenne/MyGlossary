@@ -7,7 +7,7 @@ import { TopBar } from "../../../components/TopBar";
 import { TagInput, Card, Classes, Dialog, Button, InputGroup, HTMLSelect, Tag, Intent, Navbar, Alignment, Popover, Menu, MenuItem, Position, Tooltip, TextArea, Icon } from "@blueprintjs/core";
 import Redirect from "../../../components/redirect";
 import { useFirebase } from "react-redux-firebase";
-import { useSelector, useStore } from "react-redux";
+import { useSelector } from "react-redux";
 import { ref } from "../../../helpers/fb";
 import TextEditor from "../../../components/TextEditor";
 import HTML from "../../../components/HTMLRender";
@@ -48,7 +48,8 @@ function Word(props) {
 					<a onClick={(e) => {
 						setCanEditorBeVisible(false);
 						setFilters({ ...filters, tags: [_.tag] })
-					}} minimal>
+					}}
+						key={i}>
 						<Tag className="word-tag" minimal interactive intent={_.isSystemTag ? Intent.SUCCESS : Intent.NONE}>{_.tag}</Tag>
 					</a>)}
 			</div>
@@ -100,10 +101,12 @@ function Page({ org }) {
 	const filterRegExp = new RegExp(filters?.term || "", "i");
 	useEffect(() => {
 		if ((filters.term != "" || filters.tags.length > 0)) {
-			if (router.query.filter !== JSON.stringify(filters))
-				router.replace(`/org/${org}/view?filter=${JSON.stringify(filters)}`, undefined, { shallow: true });
+			if (router.query.filter !== JSON.stringify(filters)) {
+				const stringifiedFilters = JSON.stringify(filters);
+				router.replace(`/org/[org]/view?filter=${stringifiedFilters}`, `/org/${org}/view?filter=${stringifiedFilters}`, { shallow: true });
+			}
 		} else if (router.query.filter) {
-			router.replace(`/org/${org}/view`, undefined, { shallow: true });
+			router.replace(`/org/[org]/view`, `/org/${org}/view`, { shallow: true });
 		}
 	}, [filters]);
 	// const auth = useSelector(state => state.firebase.auth);
@@ -198,7 +201,7 @@ function Page({ org }) {
 								res = false;
 							}
 							return res;
-						}).map(_ => <Word filters={filters} setFilters={setFilters} key={_[0]} org={org} uid={_[0]} word={_[1]}></Word>)}
+						}).map((_, i) => <Word filters={filters} setFilters={setFilters} key={i} org={org} uid={_[0]} word={_[1]}></Word>)}
 					</div>}
 					<Dialog
 						autoFocus={true}
