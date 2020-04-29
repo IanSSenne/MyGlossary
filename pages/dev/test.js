@@ -1,17 +1,19 @@
 import React, { useState } from "react";
 import { Wrap } from "../../components/wrap";
-import dynamic from 'next/dynamic'
-import HTML from "../../components/HTML";
-
+import IsAuthenticated from "../../components/auth/IsAuthenticated";
+import IsAllowed from "../../components/auth/IsAllowed";
 
 function Page({ children, isServer }) {
-    const [text, setText] = useState("");
-    return (
-        <>
-            <textarea value={text} readOnly></textarea>
-            <hr />
-            <HTML>{text}</HTML>
-        </>
+    return ( <>
+        <IsAuthenticated target = "authenticated"> 
+        IsAuthenticated = true 
+        </IsAuthenticated> 
+        <IsAuthenticated target="unauthenticated">
+         IsAuthenticated = false 
+        </IsAuthenticated> 
+        <IsAllowed org={"helloworld"}> yes </IsAllowed>
+        <IsAllowed org={"12Apr2020 Test"}> yes </IsAllowed>
+         </>
     );
 }
-export default ({ isServer }) => <Wrap><Page isServer={isServer}></Page></Wrap>
+export default ({ isServer }) => <Wrap> <Page isServer = { isServer } > </Page></Wrap >

@@ -11,10 +11,9 @@ import { useSelector, useStore } from "react-redux";
 import { ref } from "../../../helpers/fb";
 import TextEditor from "../../../components/TextEditor";
 import HTML from "../../../components/HTMLRender";
-import Link from "next/link";
 import "../../../scss/org/view.scss"
 import { useRouter } from "next/router";
-
+import IsAllowed from "../../../components/auth/IsAllowed";
 function hashCode(str) {
 	var hash = 0, i, chr;
 	if (str.length === 0) return hash;
@@ -26,7 +25,7 @@ function hashCode(str) {
 	return hash;
 };
 function Word(props) {
-	const { word, uid, org } = props;
+	const { word, uid, org, setFilters, filters } = props;
 	const firebase = useFirebase();
 	const auth = useSelector(state => state.firebase.auth);
 	const [wordEditorVisible, setWordEditorVisible] = useState(false);
@@ -37,7 +36,6 @@ function Word(props) {
 		})();
 	}
 	const [canEditorBeVisible, setCanEditorBeVisible] = useState(true);
-	const router = useRouter();
 	return <>
 		<Card className="word-container" interactive onClick={() => setWordEditorVisible(true)} style={{ height: "200px", minWidth: "200px" }}>
 			<div style={{ textAlign: "center", color: "black" }}>
@@ -49,7 +47,7 @@ function Word(props) {
 				{word.tags.map((_, i) =>
 					<a onClick={(e) => {
 						setCanEditorBeVisible(false);
-						router.replace(`/org/[org]/search/tag/[query]`, `/org/${org}/search/tag/${_.tag}`);
+						setFilters({ ...filters, tags: [_.tag] })
 					}} minimal>
 						<Tag className="word-tag" minimal interactive intent={_.isSystemTag ? Intent.SUCCESS : Intent.NONE}>{_.tag}</Tag>
 					</a>)}
@@ -82,11 +80,32 @@ function Page({ org }) {
 	const firebase = useFirebase();
 	const [words, setWords] = useState();
 	const [addWordVisible, setAddWordVisible] = useState(false);
+	const [filterResultsVisible, setFilterResultsVisible] = useState(false);
 	const [newWord, setNewWord] = useState("");
 	const [newWordInitialTag, setNewWordInitialTag] = useState("term");
 	const [sortType, setSortType] = useState("initial");
 	const [newWordDef, setNewWordDef] = useState("");
 	const [tags, setTags] = useState([]);
+	const [searchEdits, setSearchEdits] = useState({ tags: [], term: "" });
+	const router = useRouter();
+	let o;
+	try {
+		o = JSON.parse(router.query.filter);
+		o.term = o.term || "";
+		o.tags = Array.isArray(o.tags) ? o.tags : [];
+	} catch{
+		o = { tags: [], term: "" };
+	}
+	const [filters, setFilters] = useState(o);
+	const filterRegExp = new RegExp(filters?.term || "", "i");
+	useEffect(() => {
+		if ((filters.term != "" || filters.tags.length > 0)) {
+			if (router.query.filter !== JSON.stringify(filters))
+				router.replace(`/org/${org}/view?filter=${JSON.stringify(filters)}`, undefined, { shallow: true });
+		} else if (router.query.filter) {
+			router.replace(`/org/${org}/view`, undefined, { shallow: true });
+		}
+	}, [filters]);
 	// const auth = useSelector(state => state.firebase.auth);
 	if (!Boolean(words)) {
 		const orgRef = firebase.ref(`/org/${org}`);
@@ -97,9 +116,6 @@ function Page({ org }) {
 	}
 	const sortMenu = (
 		<Menu>
-			{/* <MenuItem icon={"sort"} text="creation order" shouldDismissPopover onClick={() => {
-				setSortType("initial");
-			}}></MenuItem> */}
 			<MenuItem icon={"sort-alphabetical"} text="A to Z" shouldDismissPopover onClick={() => {
 				setSortType("a-z");
 			}}></MenuItem>
@@ -116,101 +132,174 @@ function Page({ org }) {
 	return (
 		<div>
 			<TopBar org={org}></TopBar>
-			<Navbar>
-				<Navbar.Group align={Alignment.LEFT}>
-					<Popover content={sortMenu}>
-						<Tooltip content="Sort!" position={Position.BOTTOM_RIGHT}>
-							<Button icon={sortIcons[sortType]}></Button>
+			<IsAllowed org={org}>
+				<Navbar>
+					<Navbar.Group align={Alignment.LEFT}>
+						<Popover content={sortMenu}>
+							<Tooltip content="Sort!" position={Position.BOTTOM_RIGHT}>
+								<Button icon={sortIcons[sortType]}></Button>
+							</Tooltip>
+						</Popover>
+						<Navbar.Divider></Navbar.Divider>
+						<Tooltip content="Filter Results" position={Position.BOTTOM_LEFT}>
+							<Button icon="filter-list" onClick={() => setFilterResultsVisible(true)}></Button>
 						</Tooltip>
-					</Popover>
-					<Tooltip content="Filter Results" position={Position.BOTTOM_LEFT}>
-						<Button icon="filter-list" onClick={() => setAddWordVisible(true)}></Button>
-					</Tooltip>
-				</Navbar.Group>
-				<Navbar.Group align={Alignment.RIGHT}>
-					<Tooltip content="Add a term!" position={Position.BOTTOM_LEFT}>
-						<Button icon="plus" onClick={() => setAddWordVisible(true)}></Button>
-					</Tooltip>
-				</Navbar.Group>
-			</Navbar>
-			<IsAuthenticated target="unauthenticated">
-				<Redirect target="/"></Redirect>
-			</IsAuthenticated>
-			<IsAuthenticated>
-				{!Boolean(words) ? "loading..." : <div style={{
-					display: "flex",
-					flexDirection: "row",
-					flexWrap: "wrap",
-					justifyContent: "center",
-					paddingTop: 8,
-				}}>
-					{(sortType === "initial" ? words : words.sort((a, b) => {
-						if (sortType === "a-z") return a[1].word.toLowerCase().localeCompare(b[1].word.toLowerCase());
-						return b[1].word.toLowerCase().localeCompare(a[1].word.toLowerCase());
-					})).map(_ => <Word key={_[0]} org={org} uid={_[0]} word={_[1]}></Word>)}
-				</div>}
-				<Dialog
-					autoFocus={true}
-					canEscapeKeyClose={true}
-					canOutsideClickClose={true}
-					enforceFocus={true}
-					isOpen={addWordVisible}
-					icon="info-sign"
-					onClose={() => {
-						setAddWordVisible(false);
-						setNewWord("");
-					}}
-					title="Add a term."
-				>
-					<div className={Classes.DIALOG_BODY}>
-						<p>Please enter the term to add</p>
-						<InputGroup onChange={(evt) => setNewWord(evt.target.value)} value={newWord}></InputGroup>
-						<br />
-						<p>definition</p>
-						{/* <TextArea fill value={newWordDef} onChange={(evt) => setNewWordDef(evt.target.value)}></TextArea> */}
-						<TextEditor value={newWordDef} onChange={(text) => setNewWordDef(text)}></TextEditor>
-						<br />
-						<p>Tags</p><TagInput
-							onChange={(values) => {
-								setTags(values);
-							}}
-							placeholder="Separate values with commas..."
-							rightElement={<Button
-								icon={tags.length > 1 ? <Icon icon="cross"></Icon> : null}
-								minimal={true}
-								onClick={() => {
-									setTags([]);
+						{
+							(filters.term.length + filters.tags.length > 0) && <Tooltip content="Clear Filter" position={Position.BOTTOM}>
+								<Button icon="trash" intent={Intent.DANGER} onClick={() => setFilters({ term: "", tags: [] })}></Button>
+							</Tooltip>
+						}
+					</Navbar.Group>
+					<Navbar.Group align={Alignment.RIGHT}>
+						<Tooltip content="Add a term!" position={Position.BOTTOM_LEFT}>
+							<Button icon="plus" onClick={() => setAddWordVisible(true)}></Button>
+						</Tooltip>
+					</Navbar.Group>
+				</Navbar>
+				<IsAuthenticated target="unauthenticated">
+					<Redirect target="/"></Redirect>
+				</IsAuthenticated>
+				<IsAuthenticated>
+					{!Boolean(words) ? "loading..." : <div style={{
+						display: "flex",
+						flexDirection: "row",
+						flexWrap: "wrap",
+						justifyContent: "center",
+						paddingTop: 8,
+					}}>
+						{(sortType === "initial" ? words : words.sort((a, b) => {
+							if (sortType === "a-z") return a[1].word.toLowerCase().localeCompare(b[1].word.toLowerCase());
+							return b[1].word.toLowerCase().localeCompare(a[1].word.toLowerCase());
+						})).filter(([uid, word]) => {
+							let res = true;
+							if (filters.term != "") {
+								let result = false;
+								try {
+									const description = new DOMParser().parseFromString(word.definition, "text/html").body.innerText;
+									if (filterRegExp.test(description)) {
+										result = true;
+									} else if (filterRegExp.test(word.word)) {
+										result = true;
+									}
+								} catch{ }
+								if (!result) {
+									res = false;
+								}
+							}
+							let hasTag = false;
+							for (let i = 0; i < word.tags.length; i++) {
+								const tag = word.tags[i].tag;
+								if (filters.tags.includes(tag)) {
+									hasTag = true;
+									break;
+								}
+							}
+							if (!hasTag && filters.tags.length > 0) {
+								res = false;
+							}
+							return res;
+						}).map(_ => <Word filters={filters} setFilters={setFilters} key={_[0]} org={org} uid={_[0]} word={_[1]}></Word>)}
+					</div>}
+					<Dialog
+						autoFocus={true}
+						canEscapeKeyClose={true}
+						canOutsideClickClose={true}
+						enforceFocus={true}
+						isOpen={addWordVisible}
+						icon="info-sign"
+						onClose={() => {
+							setAddWordVisible(false);
+							setNewWord("");
+						}}
+						title="Add a term."
+					>
+						<div className={Classes.DIALOG_BODY}>
+							<p>Please enter the term to add</p>
+							<InputGroup onChange={(evt) => setNewWord(evt.target.value)} value={newWord}></InputGroup>
+							<br />
+							<p>definition</p>
+							<TextEditor value={newWordDef} onChange={(text) => setNewWordDef(text)}></TextEditor>
+							<br />
+							<p>Tags</p><TagInput
+								onChange={(values) => {
+									setTags(values);
 								}}
-							/>}
-							values={tags}
-						/>
-						<p>Type</p>
-						<HTMLSelect value={newWordInitialTag} onChange={(evt) => setNewWordInitialTag(evt.target.value)}>
-							<option value="term">Glossary Term</option>
-							<option value="acronym">Acronym</option>
-						</HTMLSelect>
-					</div>
-					<div className={Classes.DIALOG_FOOTER}>
-						<div className={Classes.DIALOG_FOOTER_ACTIONS}>
-							<Button onClick={() => {
-								debugger;
-								firebase.ref(`org/${org}/words`).push({
-									word: newWord, tags: [{ isRemovable: false, tag: newWordInitialTag, isSystemTag: true }, ...tags.map(_ => {
-										return {
-											isRemovable: true, tag: _, isSystemTag: false
-										}
-									})], definition: newWordDef
-								});
-								setNewWord("");
-								setNewWordInitialTag("term");
-								setAddWordVisible(false);
-								setNewWordDef("");
-								setTags([]);
-							}}>Add</Button>
+								placeholder="Separate values with commas..."
+								rightElement={<Button
+									icon={tags.length > 1 ? <Icon icon="cross"></Icon> : null}
+									minimal={true}
+									onClick={() => {
+										setTags([]);
+									}}
+								/>}
+								values={tags}
+							/>
+							<p>Type</p>
+							<HTMLSelect value={newWordInitialTag} onChange={(evt) => setNewWordInitialTag(evt.target.value)}>
+								<option value="term">Glossary Term</option>
+								<option value="acronym">Acronym</option>
+							</HTMLSelect>
 						</div>
-					</div>
-				</Dialog>
-			</IsAuthenticated>
+						<div className={Classes.DIALOG_FOOTER}>
+							<div className={Classes.DIALOG_FOOTER_ACTIONS}>
+								<Button onClick={() => {
+									firebase.ref(`org/${org}/words`).push({
+										word: newWord, tags: [{ isRemovable: false, tag: newWordInitialTag, isSystemTag: true }, ...tags.map(_ => {
+											return {
+												isRemovable: true, tag: _, isSystemTag: false
+											}
+										})], definition: newWordDef
+									});
+									setNewWord("");
+									setNewWordInitialTag("term");
+									setAddWordVisible(false);
+									setNewWordDef("");
+									setTags([]);
+								}}>Add</Button>
+							</div>
+						</div>
+					</Dialog>
+					<Dialog
+						autoFocus={true}
+						canEscapeKeyClose={true}
+						canOutsideClickClose={true}
+						enforceFocus={true}
+						isOpen={filterResultsVisible}
+						icon="info-sign"
+						onClose={() => {
+							setFilterResultsVisible(false);
+						}}
+						title="Filter words"
+					>
+						<div className={Classes.DIALOG_BODY}>
+							<strong>Tags</strong>
+							<p>please select any tags you wish to filter by.</p>
+							<TagInput values={searchEdits.tags} onChange={(evt) => setSearchEdits({
+								tags: evt.filter((value, index, arr) => {
+									return arr.indexOf(value) === index;
+								}),
+								term: searchEdits.term
+							})}></TagInput>
+							<hr />
+							<strong>Term</strong>
+							<p>please enter a term to filter by. (empty to omit)</p>
+							<InputGroup value={searchEdits.term} onChange={evt => {
+								setSearchEdits({ tags: searchEdits.tags, term: evt.target.value });
+							}}></InputGroup>
+						</div>
+						<div className={Classes.DIALOG_FOOTER}>
+							<div className={Classes.DIALOG_FOOTER_ACTIONS}>
+								<Button onClick={() => {
+									setSearchEdits({ tags: [], term: "" });
+								}} icon="trash" intent={Intent.DANGER}></Button>
+								<Button onClick={() => {
+									setFilters(searchEdits);
+								}}>Apply</Button>
+							</div>
+						</div>
+					</Dialog>
+				</IsAuthenticated>
+			</IsAllowed>
 		</div>
 	);
 }
