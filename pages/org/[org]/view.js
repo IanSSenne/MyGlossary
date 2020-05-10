@@ -14,6 +14,9 @@ import HTML from "../../../components/HTMLRender";
 import "../../../scss/org/view.scss"
 import { useRouter } from "next/router";
 import IsAllowed from "../../../components/auth/IsAllowed";
+import HasPerm from "../../../components/HasPerm";
+import scopes from "../../../helpers/scopes";
+
 function hashCode(str) {
 	var hash = 0, i, chr;
 	if (str.length === 0) return hash;
@@ -23,7 +26,8 @@ function hashCode(str) {
 		hash |= 0; // Convert to 32bit integer
 	}
 	return hash;
-};
+}
+
 function Word(props) {
 	const { word, uid, org, setFilters, filters } = props;
 	const firebase = useFirebase();
@@ -37,13 +41,10 @@ function Word(props) {
 	}
 	const [canEditorBeVisible, setCanEditorBeVisible] = useState(true);
 	return <>
-		<Card className="word-container" interactive onClick={() => setWordEditorVisible(true)} style={{ height: "200px", minWidth: "200px" }}>
-			<div style={{ textAlign: "center", color: "black" }}>
+		<Card className="word-container" interactive onClick={() => setWordEditorVisible(true)} style={{ minWidth: "200px" }}>
+			<div style={{ color: "black" }}>
 				<h3>{word.word}</h3>
-				<div style={{
-					overflowY: "hidden",
-					height: "100px"
-				}}><HTML>{word.definition}</HTML></div>
+				<div><HTML>{word.definition}</HTML></div>
 				{word.tags.map((_, i) =>
 					<a onClick={(e) => {
 						setCanEditorBeVisible(false);
@@ -109,6 +110,13 @@ function Page({ org }) {
 			router.replace(`/org/[org]/view`, `/org/${org}/view`, { shallow: true });
 		}
 	}, [filters]);
+	useEffect(() => {
+		(async () => {
+			if (!(await ref.exists(firebase.ref(`/org/${org}`)))) {
+				router.replace(`/home`);
+			}
+		})();
+	}, []);
 	// const auth = useSelector(state => state.firebase.auth);
 	if (!Boolean(words)) {
 		const orgRef = firebase.ref(`/org/${org}`);
@@ -153,22 +161,28 @@ function Page({ org }) {
 							</Tooltip>
 						}
 					</Navbar.Group>
-					<Navbar.Group align={Alignment.RIGHT}>
-						<Tooltip content="Add a term!" position={Position.BOTTOM_LEFT}>
-							<Button icon="plus" onClick={() => setAddWordVisible(true)}></Button>
-						</Tooltip>
-					</Navbar.Group>
+					<HasPerm perm={STATES.WORD_CREATE} org={org}>
+						<Navbar.Group align={Alignment.RIGHT}>
+							<Tooltip content="Add a term!" position={Position.BOTTOM_LEFT}>
+								<Button icon="plus" onClick={() => setAddWordVisible(true)}></Button>
+							</Tooltip>
+						</Navbar.Group>
+					</HasPerm>
 				</Navbar>
 				<IsAuthenticated target="unauthenticated">
 					<Redirect target="/"></Redirect>
 				</IsAuthenticated>
 				<IsAuthenticated>
 					{!Boolean(words) ? "loading..." : <div style={{
-						display: "flex",
+						display: "block",
 						flexDirection: "row",
 						flexWrap: "wrap",
-						justifyContent: "center",
-						paddingTop: 8,
+						// justifyContent: "center",
+						// gridTemplateColumns: "repeat(auto-fill,minmax(200px,300px))",
+						// gridTemplateRows: "repeat(auto-fill,minmax(100px.200px))",
+						// gridAutoRows: "auto",
+						// gridAutoColumns: "repeat(auto-fill,minmax(200px,300px))",
+						// paddingTop: 8,
 					}}>
 						{(sortType === "initial" ? words : words.sort((a, b) => {
 							if (sortType === "a-z") return a[1].word.toLowerCase().localeCompare(b[1].word.toLowerCase());
@@ -203,65 +217,67 @@ function Page({ org }) {
 							return res;
 						}).map((_, i) => <Word filters={filters} setFilters={setFilters} key={i} org={org} uid={_[0]} word={_[1]}></Word>)}
 					</div>}
-					<Dialog
-						autoFocus={true}
-						canEscapeKeyClose={true}
-						canOutsideClickClose={true}
-						enforceFocus={true}
-						isOpen={addWordVisible}
-						icon="info-sign"
-						onClose={() => {
-							setAddWordVisible(false);
-							setNewWord("");
-						}}
-						title="Add a term."
-					>
-						<div className={Classes.DIALOG_BODY}>
-							<p>Please enter the term to add</p>
-							<InputGroup onChange={(evt) => setNewWord(evt.target.value)} value={newWord}></InputGroup>
-							<br />
-							<p>definition</p>
-							<TextEditor value={newWordDef} onChange={(text) => setNewWordDef(text)}></TextEditor>
-							<br />
-							<p>Tags</p><TagInput
-								onChange={(values) => {
-									setTags(values);
-								}}
-								placeholder="Separate values with commas..."
-								rightElement={<Button
-									icon={tags.length > 1 ? <Icon icon="cross"></Icon> : null}
-									minimal={true}
-									onClick={() => {
-										setTags([]);
+					<HasPerm perm={scopes.WORD_EDIT_WORD} org={org}>
+						<Dialog
+							autoFocus={true}
+							canEscapeKeyClose={true}
+							canOutsideClickClose={true}
+							enforceFocus={true}
+							isOpen={addWordVisible}
+							icon="info-sign"
+							onClose={() => {
+								setAddWordVisible(false);
+								setNewWord("");
+							}}
+							title="Add a term."
+						>
+							<div className={Classes.DIALOG_BODY}>
+								<p>Please enter the term to add</p>
+								<InputGroup onChange={(evt) => setNewWord(evt.target.value)} value={newWord}></InputGroup>
+								<br />
+								<p>definition</p>
+								<TextEditor value={newWordDef} onChange={(text) => setNewWordDef(text)}></TextEditor>
+								<br />
+								<p>Tags</p><TagInput
+									onChange={(values) => {
+										setTags(values);
 									}}
-								/>}
-								values={tags}
-							/>
-							<p>Type</p>
-							<HTMLSelect value={newWordInitialTag} onChange={(evt) => setNewWordInitialTag(evt.target.value)}>
-								<option value="term">Glossary Term</option>
-								<option value="acronym">Acronym</option>
-							</HTMLSelect>
-						</div>
-						<div className={Classes.DIALOG_FOOTER}>
-							<div className={Classes.DIALOG_FOOTER_ACTIONS}>
-								<Button onClick={() => {
-									firebase.ref(`org/${org}/words`).push({
-										word: newWord, tags: [{ isRemovable: false, tag: newWordInitialTag, isSystemTag: true }, ...tags.map(_ => {
-											return {
-												isRemovable: true, tag: _, isSystemTag: false
-											}
-										})], definition: newWordDef
-									});
-									setNewWord("");
-									setNewWordInitialTag("term");
-									setAddWordVisible(false);
-									setNewWordDef("");
-									setTags([]);
-								}}>Add</Button>
+									placeholder="Separate values with commas..."
+									rightElement={<Button
+										icon={tags.length > 1 ? <Icon icon="cross"></Icon> : null}
+										minimal={true}
+										onClick={() => {
+											setTags([]);
+										}}
+									/>}
+									values={tags}
+								/>
+								<p>Type</p>
+								<HTMLSelect value={newWordInitialTag} onChange={(evt) => setNewWordInitialTag(evt.target.value)}>
+									<option value="term">Glossary Term</option>
+									<option value="acronym">Acronym</option>
+								</HTMLSelect>
 							</div>
-						</div>
-					</Dialog>
+							<div className={Classes.DIALOG_FOOTER}>
+								<div className={Classes.DIALOG_FOOTER_ACTIONS}>
+									<Button onClick={() => {
+										firebase.ref(`org/${org}/words`).push({
+											word: newWord, tags: [{ isRemovable: false, tag: newWordInitialTag, isSystemTag: true }, ...tags.map(_ => {
+												return {
+													isRemovable: true, tag: _, isSystemTag: false
+												}
+											})], definition: newWordDef
+										});
+										setNewWord("");
+										setNewWordInitialTag("term");
+										setAddWordVisible(false);
+										setNewWordDef("");
+										setTags([]);
+									}}>Add</Button>
+								</div>
+							</div>
+						</Dialog>
+					</HasPerm>
 					<Dialog
 						autoFocus={true}
 						canEscapeKeyClose={true}

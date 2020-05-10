@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useFirebase } from "react-redux-firebase";
+import { useFirebase, isLoaded, isEmpty } from "react-redux-firebase";
 import { useSelector } from "react-redux";
 import { Wrap } from "../components/wrap";
 import { TopBar } from "../components/TopBar";
@@ -14,6 +14,11 @@ function Org({ org }) {
       </Card>
     </a>
   </Link>
+}
+function OrgInfo() {
+  return <div>
+    "you are not a member of any organizations"
+  </div>
 }
 function Page({ children, isServer }) {
   const firebase = useFirebase()
@@ -36,8 +41,8 @@ function Page({ children, isServer }) {
   return (
     <div>
       <TopBar></TopBar>
-      {!Boolean(orgs) ? "loading..." : orgs}
-    </div >
+      {isLoaded(orgs) ? (isEmpty(orgs) ? <OrgInfo></OrgInfo> : orgs) : "loading..."}
+    </div>
   );
 }
 export default () => <Wrap><Page></Page></Wrap>

@@ -7,7 +7,7 @@ import { TopBar } from "../components/TopBar";
 import { InputGroup, Card, Classes, Intent, Button } from "@blueprintjs/core";
 import { ref } from "../helpers/fb";
 import { useRouter } from "next/router";
-
+import SCOPES from "../helpers/scopes";
 
 function Page({ children }) {
   const firebase = useFirebase()
@@ -63,7 +63,22 @@ function Page({ children }) {
                 setError(`Organization "${orgName}" already exists.`);
               } else {
                 setError("");
-                firebase.ref("org").child(orgName).set({ owner: auth.uid });
+                firebase.ref("org").child(orgName).set({
+                  owner: auth.uid, users: {
+                    [auth.uid]: {
+                      scopes: [
+                        SCOPES.WORD_EDIT_WORD,
+                        SCOPES.WORD_REMOVE_WORD,
+                        SCOPES.WORD_APROVE_WORD,
+                        SCOPES.WORD_SET_DEFINITION,
+                        SCOPES.WORD_CREATE,
+                        SCOPES.ORG_OWNER,
+                        SCOPES.ORG_ADMIN_MANAGE_USERS,
+                        SCOPES.ORG_ADMIN_UPLOAD_WORDS,
+                        SCOPES.ORG_ADMIN_REMOVE_USERS]
+                    }
+                  }
+                });
                 firebase.ref("users").child(auth.uid).child("owned").push({ name: orgName });
                 firebase.ref("users").child(auth.uid).child("joined").push({ name: orgName });
                 router.push("/org/" + orgName + "/landing");
