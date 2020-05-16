@@ -33,7 +33,7 @@ function Word(props) {
 	const auth = useSelector(state => state.firebase.auth);
 	const [wordEditorVisible, setWordEditorVisible] = useState(false);
 	const [isBookmarked, setIsBookmarked] = useState();
-	const [editorValue, setEditorValue] = useState(word.description);
+	const [editorValue, setEditorValue] = useState(word.definition);
 	const [editorTags, setEditorTags] = useState(word.tags.filter(_ => !_.isSystemTag).map(_ => _.tag));
 	useEffect(() => {
 		(async () => {
@@ -60,6 +60,7 @@ function Word(props) {
 			<div className={Classes.DIALOG_BODY}>
 				<h2>Description</h2>
 				<TextEditor defaultValue={word.definition} onChange={(evt) => {
+					w
 					setEditorValue(evt)
 				}}></TextEditor>
 				<h2>Tags</h2>
