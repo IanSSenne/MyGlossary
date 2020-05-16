@@ -37,25 +37,27 @@ function AdminUserInterface(props) {
             <div className={Classes.DIALOG_BODY}>
                 {!meta.accepted && (<>
                     <Button icon="plus" intent={Intent.SUCCESS} text={"accept user"} onClick={() => {
-                        firebase.ref(`org/${org}/user/${uid}/accepted`).set(true);
-                        firebase.ref(`org/${org}/conf/${config.NEW_USER_PERMISSIONS}`).once("value", (snapshot) => {
-                            if (snapshot.exists()) {
-                                firebase.ref(`org/${org}/user/${uid}/scopes`).set(snapshot.val());
-                            }
+                        firebase.ref(`org/${org}/users/${uid}/accepted`).set(true);
+                        firebase.ref(`org/${org}/users/${uid}/scopes`).set([
+                            SCOPES.WORD_EDIT_WORD,
+                            SCOPES.WORD_REMOVE_WORD,
+                            SCOPES.WORD_APROVE_WORD,
+                            SCOPES.WORD_SET_DEFINITION,
+                            SCOPES.WORD_CREATE
+                        ]);
 
-                        });
                         firebase.ref(`org/${org}/users/${uid}/scopes`)
                         firebase.ref(`users/${uid}/joined`).push({ name: org });
                         setUserUIVisible(false);
                     }}></Button>
                     <Button icon="plus" intent={Intent.DANGER} text={"decline user"} onClick={() => {
-                        firebase.ref(`org/${org}/user/${uid}`).remove();
+                        firebase.ref(`org/${org}/users/${uid}`).remove();
                         setUserUIVisible(false);
                     }}></Button>
                 </>)}
 
                 {meta.accepted && (<Button intent={Intent.DANGER} onClick={() => {
-                    firebase.ref(`org/${org}/user/${uid}/accepted`).set(true);
+                    firebase.ref(`org/${org}/users/${uid}/accepted`).set(true);
                 }}></Button>)}
             </div>
             <div className={Classes.DIALOG_FOOTER}>
@@ -100,7 +102,7 @@ function Page({ children, org }) {
     const [files, setFiles] = useState();
     const [errors, setErrors] = useState([]);
     useEffect(() => {
-        firebase.ref(`org/${org}/user`).orderByValue().on("value", async (snapshot) => {
+        firebase.ref(`org/${org}/users`).on("value", async (snapshot) => {
             const users = snapshot.val();
             if (!users) {
                 return;
@@ -124,12 +126,14 @@ function Page({ children, org }) {
             }
             await Promise.all(p);
             verified.forEach(user => {
+                console.log(user);
                 state.nodes[0].childNodes.push({
                     id: id++,
                     label: (<AdminUserInterface user={user} org={org}></AdminUserInterface>),
                 });
             });
             unverified.forEach(user => {
+                console.log(user);
                 state.nodes[1].childNodes.push({
                     id: id++,
                     label: (<AdminUserInterface user={user} org={org}></AdminUserInterface>)

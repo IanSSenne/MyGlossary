@@ -8,10 +8,10 @@ export default function IsAllowed({ org, children, negate }) {
     let [visible, setVisible] = useState(false);
     const auth = useSelector(state => state.firebase.auth);
     useEffect(() => {
-        if(!isEmpty(auth) && isLoaded(auth)){
-            firebase.ref(`org/${org}/user/${auth.uid}`).once("value", snap => {
+        if (!isEmpty(auth) && isLoaded(auth)) {
+            firebase.ref(`org/${org}/users/${auth.uid}`).once("value", snap => {
                 if (snap.exists()) {
-                    if(snap.val().accepted){
+                    if (snap.val().accepted) {
                         setVisible(true);
                     }
                 }
@@ -26,7 +26,7 @@ export default function IsAllowed({ org, children, negate }) {
     if (negate) {
         visible = !visible;
     }
-    if(!visible){
+    if (!visible) {
         return null;
     }
     return <>
