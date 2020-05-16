@@ -59,7 +59,7 @@ function Word(props) {
 		<Dialog isOpen={canEditorBeVisible && wordEditorVisible} title={`Edit "${word.word}"`} onClose={() => setWordEditorVisible(false)}>
 			<div className={Classes.DIALOG_BODY}>
 				<h2>Description</h2>
-				<TextEditor defaultValue={word.definition} onChange={(evt, ...re) => {
+				<TextEditor defaultValue={word.definition} onChange={(evt) => {
 					setEditorValue(evt)
 				}}></TextEditor>
 				<h2>Tags</h2>
@@ -86,9 +86,10 @@ function Word(props) {
 						}
 					}} small></Button>
 					<Button onClick={() => {
+						debugger;
 						firebase.ref(`/org/${org}/words/${uid}/history`).push({
 							author: auth.uid,
-							definition: editorValue,
+							definition: editorValue || word.definition,
 							tags: word.tags,
 							timestamp: new Date().getTime()
 						});
