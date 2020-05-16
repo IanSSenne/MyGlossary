@@ -23,8 +23,8 @@ function Page(props) {
                     <Blueprint.Divider></Blueprint.Divider>
                     <AnchorButton onClick={async () => {
                         debugger;
-                        if (!await ref.exists(firebase.ref(`org/${props.target}/user/${auth.uid}`))) {
-                            firebase.ref(`org/${props.target}/user/${auth.uid}/accepted`).set(false);
+                        if (!await ref.exists(firebase.ref(`org/${props.target}/users/${auth.uid}`))) {
+                            firebase.ref(`org/${props.target}/users/${auth.uid}/accepted`).set(false);
                             router.push("/");
                         } else {
                             router.replace("/error?error=" + encodeURI("unable to join as you are already awaiting acceptance or already in this organization."));

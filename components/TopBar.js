@@ -16,13 +16,15 @@ export function TopBar(props) {
         <Navbar className={Classes.DARK}>
             <NavbarGroup align={Alignment.LEFT}>
                 <NavbarHeading>MyGlossary</NavbarHeading>
-                {org && <>
-                    <NavbarDivider />
-                    <Link href="/org/[org]/landing" as={`/org/${org}/landing`}>
-                        <AnchorButton className={Classes.MINIMAL} text={org} />
-                    </Link>
-                    <NavbarDivider />
-                </>}
+                <NavbarDivider />
+                <Link href="/home">
+                    <AnchorButton className={Classes.MINIMAL} text={"Home"}></AnchorButton>
+                </Link>
+                <NavbarDivider />
+                {org && <Link href="/org/[org]/landing" as={`/org/${org}/landing`}>
+                    <AnchorButton className={Classes.MINIMAL} text={org} />
+                </Link>}
+                <NavbarDivider />
 
                 <IsAuthenticated>
                     <Link href="/portal">

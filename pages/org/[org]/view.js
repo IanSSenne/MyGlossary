@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from "react";
-// import { useFirebase } from "react-redux-firebase";
-// import { useSelector, useStore } from "react-redux";
 import { Wrap } from "../../../components/wrap";
 import IsAuthenticated from "../../../components/auth/IsAuthenticated";
 import { TopBar } from "../../../components/TopBar";
-import { TagInput, Card, Classes, Dialog, Button, InputGroup, HTMLSelect, Tag, Intent, Navbar, Alignment, Popover, Menu, MenuItem, Position, Tooltip, TextArea, Icon } from "@blueprintjs/core";
+import { TagInput, Card, Classes, Dialog, Button, InputGroup, HTMLSelect, Tag, Intent, Navbar, Alignment, Popover, Menu, MenuItem, Position, Tooltip, Icon } from "@blueprintjs/core";
 import Redirect from "../../../components/redirect";
 import { useFirebase } from "react-redux-firebase";
 import { useSelector } from "react-redux";
@@ -16,7 +14,8 @@ import { useRouter } from "next/router";
 import IsAllowed from "../../../components/auth/IsAllowed";
 import HasPerm from "../../../components/HasPerm";
 import scopes from "../../../helpers/scopes";
-
+import { EditHistory } from "../../../components/EditHistory";
+import { MultiSelect } from "@blueprintjs/select";
 function hashCode(str) {
 	var hash = 0, i, chr;
 	if (str.length === 0) return hash;
@@ -34,11 +33,13 @@ function Word(props) {
 	const auth = useSelector(state => state.firebase.auth);
 	const [wordEditorVisible, setWordEditorVisible] = useState(false);
 	const [isBookmarked, setIsBookmarked] = useState();
-	if (isBookmarked === undefined) {
+	const [editorValue, setEditorValue] = useState(word.description);
+	const [editorTags, setEditorTags] = useState(word.tags.filter(_ => !_.isSystemTag).map(_ => _.tag));
+	useEffect(() => {
 		(async () => {
 			setIsBookmarked(await ref.exists(firebase.ref(`users/${auth.uid}/bookmarked/${hashCode(org).toString(36)}-${hashCode(uid).toString(36)}`)))
 		})();
-	}
+	}, []);
 	const [canEditorBeVisible, setCanEditorBeVisible] = useState(true);
 	return <>
 		<Card className="word-container" interactive onClick={() => setWordEditorVisible(true)} style={{ minWidth: "200px" }}>
@@ -57,6 +58,20 @@ function Word(props) {
 		</Card>
 		<Dialog isOpen={canEditorBeVisible && wordEditorVisible} title={`Edit "${word.word}"`} onClose={() => setWordEditorVisible(false)}>
 			<div className={Classes.DIALOG_BODY}>
+				<h2>Description</h2>
+				<TextEditor defaultValue={word.definition} onChange={(evt, ...re) => {
+					setEditorValue(evt)
+				}}></TextEditor>
+				<h2>Tags</h2>
+				<TagInput
+					values={editorTags}
+					onChange={(tags) => {
+						setEditorTags(Array.from(new Set(tags)));
+					}}
+				></TagInput>
+				<hr />
+				<h2 className={Classes.HEADING}>History</h2>
+				<EditHistory word={word} org={org} id={uid}></EditHistory>
 			</div>
 			<div className={Classes.DIALOG_FOOTER}>
 				<div className={Classes.DIALOG_FOOTER_ACTIONS}>
@@ -71,6 +86,22 @@ function Word(props) {
 						}
 					}} small></Button>
 					<Button onClick={() => {
+						firebase.ref(`/org/${org}/words/${uid}/history`).push({
+							author: auth.uid,
+							definition: editorValue,
+							tags: word.tags,
+							timestamp: new Date().getTime()
+						});
+						firebase.ref(`/org/${org}/words/${uid}`).update({
+							tags: [...word.tags.filter(_ => _.isSystemTag), ...editorTags.map(_ => {
+								return {
+									isRemovable: true, tag: _, isSystemTag: false
+								}
+							})]
+						});
+						firebase.ref(`/org/${org}/words/${uid}`).update({ definition: editorValue });
+						setEditorTags(word.tags.filter(_ => !_.isSystemTag).map(_ => _.tag));
+						setEditorValue(word.description);
 					}}>Save</Button>
 				</div>
 			</div>
@@ -89,6 +120,9 @@ function Page({ org }) {
 	const [newWordDef, setNewWordDef] = useState("");
 	const [tags, setTags] = useState([]);
 	const [searchEdits, setSearchEdits] = useState({ tags: [], term: "" });
+	const [filterTags, setFilterTags] = useState([]);
+	const [tagList, setTagList] = useState([]);
+	const auth = useSelector(state => state.firebase.auth);
 	const router = useRouter();
 	let o;
 	try {
@@ -100,6 +134,15 @@ function Page({ org }) {
 	}
 	const [filters, setFilters] = useState(o);
 	const filterRegExp = new RegExp(filters?.term || "", "i");
+	useEffect(() => {
+		const tagSet = new Set();
+		if (words) {
+			words.forEach(([, word]) => {
+				word.tags.forEach(tag => tagSet.add(tag.tag))
+			});
+		}
+		setTagList(Array.from(tagSet));
+	}, [words]);
 	useEffect(() => {
 		if ((filters.term != "" || filters.tags.length > 0)) {
 			if (router.query.filter !== JSON.stringify(filters)) {
@@ -117,6 +160,12 @@ function Page({ org }) {
 			}
 		})();
 	}, []);
+	useEffect(() => {
+		setSearchEdits({
+			tags: filterTags,
+			term: searchEdits.term
+		})
+	}, [filterTags])
 	// const auth = useSelector(state => state.firebase.auth);
 	if (!Boolean(words)) {
 		const orgRef = firebase.ref(`/org/${org}`);
@@ -203,11 +252,11 @@ function Page({ org }) {
 									res = false;
 								}
 							}
-							let hasTag = false;
-							for (let i = 0; i < word.tags.length; i++) {
-								const tag = word.tags[i].tag;
-								if (filters.tags.includes(tag)) {
-									hasTag = true;
+							let hasTag = true;
+							const tags = word.tags.map(_ => _.tag);
+							for (let i = 0; i < filters.tags.length; i++) {
+								if (!tags.includes(filters.tags[i])) {
+									hasTag = false;
 									break;
 								}
 							}
@@ -266,7 +315,18 @@ function Page({ org }) {
 												return {
 													isRemovable: true, tag: _, isSystemTag: false
 												}
-											})], definition: newWordDef
+											})],
+											definition: newWordDef,
+											history: [{
+												author: auth.uid,
+												definition: newWordDef,
+												tags: [{ isRemovable: false, tag: newWordInitialTag, isSystemTag: true }, ...tags.map(_ => {
+													return {
+														isRemovable: true, tag: _, isSystemTag: false
+													}
+												})],
+												timestamp: new Date().getTime()
+											}]
 										});
 										setNewWord("");
 										setNewWordInitialTag("term");
@@ -278,48 +338,74 @@ function Page({ org }) {
 							</div>
 						</Dialog>
 					</HasPerm>
-					<Dialog
-						autoFocus={true}
-						canEscapeKeyClose={true}
-						canOutsideClickClose={true}
-						enforceFocus={true}
-						isOpen={filterResultsVisible}
-						icon="info-sign"
-						onClose={() => {
-							setFilterResultsVisible(false);
-						}}
-						title="Filter words"
-					>
-						<div className={Classes.DIALOG_BODY}>
-							<strong>Tags</strong>
-							<p>please select any tags you wish to filter by.</p>
-							<TagInput values={searchEdits.tags} onChange={(evt) => setSearchEdits({
-								tags: evt.filter((value, index, arr) => {
-									return arr.indexOf(value) === index;
-								}),
-								term: searchEdits.term
-							})}></TagInput>
-							<hr />
-							<strong>Term</strong>
-							<p>please enter a term to filter by. (empty to omit)</p>
-							<InputGroup value={searchEdits.term} onChange={evt => {
-								setSearchEdits({ tags: searchEdits.tags, term: evt.target.value });
-							}}></InputGroup>
-						</div>
-						<div className={Classes.DIALOG_FOOTER}>
-							<div className={Classes.DIALOG_FOOTER_ACTIONS}>
-								<Button onClick={() => {
-									setSearchEdits({ tags: [], term: "" });
-								}} icon="trash" intent={Intent.DANGER}></Button>
-								<Button onClick={() => {
-									setFilters(searchEdits);
-								}}>Apply</Button>
+					{words &&
+						<Dialog
+							autoFocus={true}
+							canEscapeKeyClose={true}
+							canOutsideClickClose={true}
+							enforceFocus={true}
+							isOpen={filterResultsVisible}
+							icon="info-sign"
+							onClose={() => {
+								setFilterResultsVisible(false);
+							}}
+							title="Filter words"
+						>
+							<div className={Classes.DIALOG_BODY}>
+								<strong>Tags</strong>
+								<p>please select any tags you wish to filter by.</p>
+								<MultiSelect
+									onItemSelect={(toAdd) => {
+										if (filterTags.indexOf(toAdd) > -1) {
+											setFilterTags(filterTags.filter(item => item != toAdd));
+										} else {
+											setFilterTags([...filterTags, toAdd])
+										}
+									}}
+									tagInputProps={{
+										onRemove(tag, index) {
+											setFilterTags(filterTags.filter(item => item != tag));
+										}
+									}}
+									items={tagList}
+									itemRenderer={(item, { modifiers, handleClick }) => {
+										return <MenuItem
+											active={modifiers.active}
+											icon={filterTags.indexOf(item) > -1 ? "tick" : "blank"}
+											key={item}
+											onClick={handleClick}
+											text={item}
+											shouldDismissPopover={false}
+										/>
+									}}
+									noResults={<MenuItem disabled={true} text="No results." />}
+									selectedItems={filterTags}
+									tagRenderer={item => item}
+
+								></MultiSelect>
+								<hr />
+								<strong>Term</strong>
+								<p>please enter a term to filter by. (empty to omit)</p>
+								<InputGroup value={searchEdits.term} onChange={evt => {
+									setSearchEdits({ tags: searchEdits.tags, term: evt.target.value });
+								}}></InputGroup>
 							</div>
-						</div>
-					</Dialog>
+							<div className={Classes.DIALOG_FOOTER}>
+								<div className={Classes.DIALOG_FOOTER_ACTIONS}>
+									<Button onClick={() => {
+										setSearchEdits({ tags: [], term: "" });
+										setFilterTags([]);
+									}} icon="trash" intent={Intent.DANGER}></Button>
+									<Button onClick={() => {
+										setFilters(searchEdits);
+									}}>Apply</Button>
+								</div>
+							</div>
+						</Dialog>
+					}
 				</IsAuthenticated>
 			</IsAllowed>
-		</div>
+		</div >
 	);
 }
 const Exported = (props) => <Wrap><Page {...props}></Page></Wrap>

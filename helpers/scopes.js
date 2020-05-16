@@ -11,4 +11,4 @@ export default ENUM(class {
     ORG_ADMIN_MANAGE_USERS
     ORG_ADMIN_UPLOAD_WORDS
     ORG_ADMIN_REMOVE_USERS
-});
+}, true);

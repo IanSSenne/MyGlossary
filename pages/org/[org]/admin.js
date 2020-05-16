@@ -108,7 +108,6 @@ function Page({ children, org }) {
             const val = Object.entries(users);
             const verified = [];
             const unverified = [];
-            console.log("val", val);
             const p = [];
             for (let i = 0; i < val.length; i++) {
                 p.push(new Promise((resolve) => {
@@ -149,18 +148,20 @@ function Page({ children, org }) {
                     <tbody>
                         <tr>
                             <th>
-                                <Tree
-                                    onNodeClick={(node, _nodepath, e) => { }}
-                                    onNodeCollapse={(node) => {
-                                        node.isExpanded = false;
-                                        setUsableState({ nodes: usableState.nodes, renderId: state.renderId + 1 });
-                                    }}
-                                    onNodeExpand={(node) => {
-                                        node.isExpanded = true;
-                                        setUsableState({ nodes: usableState.nodes, renderId: state.renderId + 1 });
-                                    }}
-                                    contents={usableState.nodes}>
-                                </Tree>
+                                <HasPerm perm={SCOPES.ORG_ADMIN_MANAGE_USERS} org={org}>
+                                    <Tree
+                                        onNodeClick={(node, _nodepath, e) => { }}
+                                        onNodeCollapse={(node) => {
+                                            node.isExpanded = false;
+                                            setUsableState({ nodes: usableState.nodes, renderId: state.renderId + 1 });
+                                        }}
+                                        onNodeExpand={(node) => {
+                                            node.isExpanded = true;
+                                            setUsableState({ nodes: usableState.nodes, renderId: state.renderId + 1 });
+                                        }}
+                                        contents={usableState.nodes}>
+                                    </Tree>
+                                </HasPerm>
                             </th>
                         </tr>
                         <tr>
@@ -168,7 +169,6 @@ function Page({ children, org }) {
                                 <HasPerm perm={SCOPES.ORG_ADMIN_UPLOAD_WORDS} org={org}>
                                     <div style={{ display: "flex", verticalAlign: "center" }}>
                                         <FileInput text={fileUpload.length ? fileUpload : "Choose file..."} onInputChange={(evt) => {
-                                            console.log(evt.target.files);
                                             setFiles(evt.target.files);
                                             setFileUpload(evt.target.files[0].name);
                                         }}
@@ -233,7 +233,6 @@ function Page({ children, org }) {
                                                         ],
                                                         meta: uploadedWord.meta
                                                     };
-                                                    // console.log(word);
                                                     firebase.ref(`/org/${org}/words`).push(word);
                                                 });
                                             }

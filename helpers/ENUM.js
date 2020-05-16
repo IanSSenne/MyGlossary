@@ -1,7 +1,10 @@
-export default function ENUM(cls) {
+export default function ENUM(cls, string) {
     const a = Object.assign(Object.create(null), new cls);
     let offset = 0;
     Object.getOwnPropertyNames(a).forEach((v, i) => {
+        if (string) {
+            return a[v] = v;
+        }
         if (i == 0) {
             if (typeof a[v] === "number")
                 offset = a[v];

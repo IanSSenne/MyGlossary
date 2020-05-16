@@ -21,16 +21,26 @@ const HasPerm = (props, organization) => {
             })
         });
     }
-    const { org, perm, children } = props;
+    const { org, perm, children, any, all } = props;
     const [state, setState] = useState(0);
     useEffect(() => {
-        firebase.ref(`/org/${org}/users/${auth.uid}/scopes`).once("value", (snapshot) => {
-            if (snapshot.exists()) {
-                if (snapshot.val().includes(perm)) {
-                    setState(Math.random());
+        if (any || all) {
+            (async () => {
+                if (any) {
+                    setState(await HasPerm.any(any));
+                } else {
+                    setState(await HasPerm.all(all));
                 }
-            }
-        });
+            })();
+        } else {
+            firebase.ref(`/org/${org}/users/${auth.uid}/scopes`).once("value", (snapshot) => {
+                if (snapshot.exists()) {
+                    if (snapshot.val().includes(perm)) {
+                        setState(Math.random());
+                    }
+                }
+            });
+        }
     }, []);
     if (state === 0) {
         return null;
@@ -44,7 +54,7 @@ HasPerm.any = (perms, organization) => {
     return new Promise((resolve) => {
         firebase.ref(`/org/${organization}/users/${auth.uid}/scopes`).once("value", (snapshot) => {
             if (snapshot.exists()) {
-                for (const perm in perms) {
+                for (const perm of perms) {
                     if (snapshot.val().includes(perm)) {
                         return resolve(true);
                     }
@@ -63,7 +73,7 @@ HasPerm.all = (perms, organization) => {
     return new Promise((resolve) => {
         firebase.ref(`/org/${organization}/users/${auth.uid}/scopes`).once("value", (snapshot) => {
             if (snapshot.exists()) {
-                for (const perm in perms) {
+                for (const perm of perms) {
                     if (!snapshot.val().includes(perm)) {
                         return resolve(false);
                     }

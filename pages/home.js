@@ -13,6 +13,7 @@ function Page({ children }) {
   const firebase = useFirebase()
   const auth = useSelector(state => state.firebase.auth)
   const [orgName, setOrgName] = useState("");
+  const [joinName, setJoinName] = useState("");
   const [orgValidatorIntent, setOrgValidatorIntent] = useState(Intent.NONE);
   const [orgValidatorLength, setOrgValidatorLength] = useState(false);
   const [error, setError] = useState("");
@@ -75,7 +76,8 @@ function Page({ children }) {
                         SCOPES.ORG_OWNER,
                         SCOPES.ORG_ADMIN_MANAGE_USERS,
                         SCOPES.ORG_ADMIN_UPLOAD_WORDS,
-                        SCOPES.ORG_ADMIN_REMOVE_USERS]
+                        SCOPES.ORG_ADMIN_REMOVE_USERS],
+                      accepted: true
                     }
                   }
                 });
@@ -87,7 +89,31 @@ function Page({ children }) {
           }} disabled={Intent.DANGER === orgValidatorIntent || !orgValidatorLength} />
         </Card>
       </IsAuthenticated>
+      <IsAuthenticated target="unauthenticated">
+        <Card style={{ maxWidth: "500px" }}>
+          <h1 className={Classes.HEADING}>Join Organization</h1>
+          <InputGroup value={joinName} placeholder="Organization name" disabled></InputGroup>
+          <p>please log in to join an organization</p>
+          <Button rightIcon="arrow-right" intent="success" text="Next step" disabled />
+        </Card>
+      </IsAuthenticated>
+      <IsAuthenticated>
+        <Card style={{ maxWidth: "500px" }}>
+          <h1 className={Classes.HEADING}>Join Organization</h1>
+          <InputGroup
+            value={joinName}
+            onChange={(evt) => {
+              setJoinName(evt.target.value);
+            }}
+            placeholder="Organization name"
+          ></InputGroup>
+          <Button rightIcon="arrow-right" intent="success" text="Next step" onClick={() => {
+            router.push('/join/[id]', `/join/${joinName}`);
+          }} />
+        </Card>
+      </IsAuthenticated>
     </div >
   );
 }
+
 export default () => <Wrap><Page></Page></Wrap>
