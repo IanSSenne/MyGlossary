@@ -8,6 +8,9 @@ import fbConfig from "../firebase.config.js";
 import { Provider } from "react-redux";
 import { ReactReduxFirebaseProvider } from "react-redux-firebase";
 
+import "../scss/reset.scss";
+
+
 try {
     firebase.initializeApp(fbConfig);
 } catch (err) { }

@@ -69,38 +69,17 @@ function AdminUserInterface(props) {
                 </div>
             </div>
         </Dialog>
+        <br />
     </>
 }
 
 function Page({ children, org }) {
     const firebase = useFirebase();
-    let id = 0;
-    const state = {
-        renderId: 0, nodes: [
-            {
-                id: id++,
-                icon: "folder-close",
-                isExpanded: false,
-                label: "verified users",
-                childNodes: [
-
-                ],
-            },
-            {
-                id: id++,
-                icon: "folder-close",
-                isExpanded: false,
-                label: "unverified users",
-                childNodes: [
-
-                ],
-            },
-        ]
-    };
-    const [usableState, setUsableState] = useState(state);
     const [fileUpload, setFileUpload] = useState("");
     const [files, setFiles] = useState();
     const [errors, setErrors] = useState([]);
+    const [verifiedUsers, setVerifiedUsers] = useState([]);
+    const [unverifiedUsers, setUnverifiedUsers] = useState([]);
     useEffect(() => {
         firebase.ref(`org/${org}/users`).on("value", async (snapshot) => {
             const users = snapshot.val();
@@ -125,20 +104,8 @@ function Page({ children, org }) {
                 }));
             }
             await Promise.all(p);
-            verified.forEach(user => {
-                console.log(user);
-                state.nodes[0].childNodes.push({
-                    id: id++,
-                    label: (<AdminUserInterface user={user} org={org}></AdminUserInterface>),
-                });
-            });
-            unverified.forEach(user => {
-                console.log(user);
-                state.nodes[1].childNodes.push({
-                    id: id++,
-                    label: (<AdminUserInterface user={user} org={org}></AdminUserInterface>)
-                });
-            });
+            setVerifiedUsers(verified.map((user, index) => (<AdminUserInterface key={index} user={user} org={org}></AdminUserInterface>)));
+            setUnverifiedUsers(unverified.map((user, index) => (<AdminUserInterface key={index} user={user} org={org}></AdminUserInterface>)));
         });
     }, []);
     return (
@@ -153,18 +120,11 @@ function Page({ children, org }) {
                         <tr>
                             <th>
                                 <HasPerm perm={SCOPES.ORG_ADMIN_MANAGE_USERS} org={org}>
-                                    <Tree
-                                        onNodeClick={(node, _nodepath, e) => { }}
-                                        onNodeCollapse={(node) => {
-                                            node.isExpanded = false;
-                                            setUsableState({ nodes: usableState.nodes, renderId: state.renderId + 1 });
-                                        }}
-                                        onNodeExpand={(node) => {
-                                            node.isExpanded = true;
-                                            setUsableState({ nodes: usableState.nodes, renderId: state.renderId + 1 });
-                                        }}
-                                        contents={usableState.nodes}>
-                                    </Tree>
+                                    <h1 className={Classes.HEADING}>Manage Users</h1>
+                                    <h3>unverified</h3>
+                                    {unverifiedUsers}
+                                    <h3>verified</h3>
+                                    {verifiedUsers}
                                 </HasPerm>
                             </th>
                         </tr>

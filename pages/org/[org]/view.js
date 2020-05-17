@@ -44,7 +44,7 @@ function Word(props) {
 	return <>
 		<Card className="word-container" interactive onClick={() => setWordEditorVisible(true)} style={{ minWidth: "200px" }}>
 			<div style={{ color: "black" }}>
-				<h3>{word.word}</h3>
+				<h1>{word.word}</h1>
 				<div><HTML>{word.definition}</HTML></div>
 				{word.tags.map((_, i) =>
 					<a onClick={(e) => {
@@ -60,11 +60,11 @@ function Word(props) {
 			<div className={Classes.DIALOG_BODY}>
 				<h2>Description</h2>
 				<TextEditor defaultValue={word.definition} onChange={(evt) => {
-					w
 					setEditorValue(evt)
 				}}></TextEditor>
 				<h2>Tags</h2>
 				<TagInput
+					fill
 					values={editorTags}
 					onChange={(tags) => {
 						setEditorTags(Array.from(new Set(tags)));
@@ -87,11 +87,14 @@ function Word(props) {
 						}
 					}} small></Button>
 					<Button onClick={() => {
-						debugger;
 						firebase.ref(`/org/${org}/words/${uid}/history`).push({
 							author: auth.uid,
-							definition: editorValue || word.definition,
-							tags: word.tags,
+							definition: editorValue,
+							tags: [...word.tags.filter(_ => _.isSystemTag), ...editorTags.map(_ => {
+								return {
+									isRemovable: true, tag: _, isSystemTag: false
+								}
+							})],
 							timestamp: new Date().getTime()
 						});
 						firebase.ref(`/org/${org}/words/${uid}`).update({
@@ -103,7 +106,8 @@ function Word(props) {
 						});
 						firebase.ref(`/org/${org}/words/${uid}`).update({ definition: editorValue });
 						setEditorTags(word.tags.filter(_ => !_.isSystemTag).map(_ => _.tag));
-						setEditorValue(word.description);
+						setEditorValue(word.definition);
+						setWordEditorVisible(false);
 					}}>Save</Button>
 				</div>
 			</div>
@@ -228,6 +232,7 @@ function Page({ org }) {
 						display: "block",
 						flexDirection: "row",
 						flexWrap: "wrap",
+						margin: "1em"
 						// justifyContent: "center",
 						// gridTemplateColumns: "repeat(auto-fill,minmax(200px,300px))",
 						// gridTemplateRows: "repeat(auto-fill,minmax(100px.200px))",
@@ -290,6 +295,7 @@ function Page({ org }) {
 								<TextEditor value={newWordDef} onChange={(text) => setNewWordDef(text)}></TextEditor>
 								<br />
 								<p>Tags</p><TagInput
+									fill
 									onChange={(values) => {
 										setTags(values);
 									}}
@@ -357,6 +363,7 @@ function Page({ org }) {
 								<strong>Tags</strong>
 								<p>please select any tags you wish to filter by.</p>
 								<MultiSelect
+									fill
 									onItemSelect={(toAdd) => {
 										if (filterTags.indexOf(toAdd) > -1) {
 											setFilterTags(filterTags.filter(item => item != toAdd));
