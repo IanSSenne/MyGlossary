@@ -11,7 +11,6 @@ export default function IsAdmin({ org, children }) {
     useEffect(() => {
         (async () => {
             setIsAdmin(await HasPerm.any([
-                scopes.ORG_ADMIN_UPLOAD_WORDS,
                 scopes.ORG_ADMIN_MANAGE_USERS,
                 scopes.ORG_ADMIN_UPLOAD_WORDS,
                 scopes.ORG_ADMIN_REMOVE_USERS,
