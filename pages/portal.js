@@ -17,7 +17,9 @@ function Org({ org }) {
 }
 function OrgInfo() {
   return <div>
-    "you are not a member of any organizations"
+    <h2 style={{ textAlign: "center" }}>
+      you are not a member of any organizations
+    </h2>
   </div>
 }
 function Page({ children, isServer }) {
@@ -35,13 +37,17 @@ function Page({ children, isServer }) {
         }
         // result.push();
         setOrgs(result);
+      } else {
+        setOrgs([]);
       }
     })
   }
   return (
     <div>
       <TopBar></TopBar>
-      {isLoaded(orgs) ? (isEmpty(orgs) ? <OrgInfo></OrgInfo> : orgs) : "loading..."}
+      {isLoaded(orgs) ? (isEmpty(orgs) ? <OrgInfo></OrgInfo> : orgs) : <div>
+        <h2 style={{ textAlign: "center" }}>Loading...</h2>
+      </div>}
     </div>
   );
 }

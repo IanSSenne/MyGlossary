@@ -44,7 +44,7 @@ function Word(props) {
 	return <>
 		<Card className="word-container" interactive onClick={() => setWordEditorVisible(true)} style={{ minWidth: "200px" }}>
 			<div style={{ color: "black" }}>
-				<h1>{word.word}</h1>
+				<h1>{word.isAproved && <Icon icon="saved"></Icon>}{word.word}</h1>
 				<div><HTML>{word.definition}</HTML></div>
 				{word.tags.map((_, i) =>
 					<a onClick={(e) => {
@@ -60,7 +60,7 @@ function Word(props) {
 			<div className={Classes.DIALOG_BODY}>
 				<h2>Description</h2>
 				<TextEditor defaultValue={word.definition} onChange={(evt) => {
-					setEditorValue(evt)
+					setEditorValue(evt);
 				}}></TextEditor>
 				<h2>Tags</h2>
 				<TagInput
@@ -76,6 +76,22 @@ function Word(props) {
 			</div>
 			<div className={Classes.DIALOG_FOOTER}>
 				<div className={Classes.DIALOG_FOOTER_ACTIONS}>
+					<HasPerm any={[STATES.ORG_USER_VERIFIER]}>
+						<Button intent={Intent.SUCCESS} onClick={async () => {
+							firebase.ref(`/org/${org}/words/${uid}/isAproved`).set(true);
+							firebase.ref(`/org/${org}/words/${uid}/history`).push({
+								author: auth.uid,
+								definition: editorValue,
+								isAproved: true,
+								tags: [...word.tags.filter(_ => _.isSystemTag), ...editorTags.map(_ => {
+									return {
+										isRemovable: true, tag: _, isSystemTag: false
+									}
+								})],
+								timestamp: new Date().getTime()
+							});
+						}} small>Aprove</Button>
+					</HasPerm>
 					<Button icon="bookmark" intent={isBookmarked ? Intent.SUCCESS : Intent.NONE} onClick={async () => {
 						const path = firebase.ref(`users/${auth.uid}/bookmarked/${hashCode(org).toString(36)}-${hashCode(uid).toString(36)}`);
 						if (await ref.exists(path)) {
@@ -95,9 +111,11 @@ function Word(props) {
 									isRemovable: true, tag: _, isSystemTag: false
 								}
 							})],
+							isAproved: false,
 							timestamp: new Date().getTime()
 						});
 						firebase.ref(`/org/${org}/words/${uid}`).update({
+							isAproved: false,
 							tags: [...word.tags.filter(_ => _.isSystemTag), ...editorTags.map(_ => {
 								return {
 									isRemovable: true, tag: _, isSystemTag: false
@@ -324,6 +342,7 @@ function Page({ org }) {
 													isRemovable: true, tag: _, isSystemTag: false
 												}
 											})],
+											isVerified: false,
 											definition: newWordDef,
 											history: [{
 												author: auth.uid,

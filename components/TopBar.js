@@ -7,6 +7,7 @@ import { Bookmarks } from "./Bookmarks";
 import { useSelector } from "react-redux";
 import IsAdmin from "./auth/IsAdmin";
 import Link from "next/link";
+import Login from "./login";
 export function TopBar(props) {
     const { org } = props;
     const firebase = useFirebase();
@@ -39,9 +40,9 @@ export function TopBar(props) {
 
                 <NavbarGroup align={Alignment.RIGHT}>
                     <NavbarDivider />
-                    <Link href="/login">
+                    <Login>
                         <AnchorButton className={Classes.MINIMAL}>Login</AnchorButton>
-                    </Link>
+                    </Login>
                 </NavbarGroup>
             </IsAuthenticated>
             <IsAuthenticated>
@@ -59,9 +60,6 @@ export function TopBar(props) {
                         setIsBookmarksVisible(true);
                     }} />
                     <NavbarDivider />
-                    <NavbarHeading>
-                        <img src={auth.photoURL} height="25px" style={{ borderRadius: "50%" }} alt={`${auth.displayName}'s profile image`} />
-                    </NavbarHeading>
                     <NavbarHeading>{auth.displayName}</NavbarHeading>
                     <Button className={Classes.MINIMAL} onClick={() => {
                         firebase.logout();

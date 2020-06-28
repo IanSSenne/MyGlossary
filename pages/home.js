@@ -65,6 +65,15 @@ function Page({ children }) {
               } else {
                 setError("");
                 firebase.ref("org").child(orgName).set({
+                  groups: {
+                    default: [
+                      SCOPES.WORD_EDIT_WORD,
+                      SCOPES.WORD_REMOVE_WORD,
+                      SCOPES.WORD_APROVE_WORD,
+                      SCOPES.WORD_SET_DEFINITION,
+                      SCOPES.WORD_CREATE
+                    ]
+                  },
                   owner: auth.uid, users: {
                     [auth.uid]: {
                       scopes: [

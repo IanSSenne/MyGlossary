@@ -6,7 +6,6 @@ import Link from "next/link";
 
 
 function Page(props) {
-    console.log(props);
     return (
         <div>
             <TopBar></TopBar>

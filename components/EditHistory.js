@@ -9,7 +9,7 @@ function Item({ revision, index }) {
     const [author, setAuthor] = useState(null);
     const firebase = useFirebase();
     useEffect(() => {
-        firebase.ref(`/users/${revision.author}/displayName`).once("value", (snapshot) => {
+        firebase.ref(`/users/${revision.author}/email`).once("value", (snapshot) => {
             setAuthor(snapshot.val());
         })
     }, []);
@@ -20,6 +20,10 @@ function Item({ revision, index }) {
         {visible && <>
             <hr />
             <HTML>{revision.definition}</HTML>
+            {revision.isAproved && <>
+                <strong style={{ color: "darkgreen" }}>Aproved</strong>
+                <br />
+            </>}
             {revision.tags.map((tag, index) => {
                 return <Tag
                     intent={tag.isSystemTag ? Intent.SUCCESS : Intent.NONE}

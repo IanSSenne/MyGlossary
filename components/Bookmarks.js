@@ -50,7 +50,7 @@ export function Bookmarks({ org }) {
 			{!Boolean(bookmarks) ?
 				<li>"loading..."</li>
 				: bookmarks.length === 0 ?
-					<li>"no bookmarks found."</li>
+					<li><h3 style={{ textAlign: "center" }}>no bookmarks found.</h3></li>
 					: bookmarks.map((_, i) => <li key={i}>
 						<Bookmark book={_} org={org} />
 					</li>

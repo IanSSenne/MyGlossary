@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { getFirebase } from "react-redux-firebase";
+import { getFirebase, useFirebase, isEmpty, isLoaded } from "react-redux-firebase";
 import STATES from "../helpers/scopes";
+import { useSelector } from "react-redux";
 globalThis.STATES = STATES;
 
 const HasPerm = (props, organization) => {
-    const firebase = getFirebase();
-    const auth = getFirebase().auth().currentUser;
+    const firebase = useFirebase();
+    let auth = useSelector(state => state.firebase.auth)
     if (!props?.children) {
         return new Promise((resolve, reject) => {
             firebase.ref(`/org/${organization}/users/${auth.uid}/scopes`).once("value", (snapshot) => {
@@ -33,13 +34,25 @@ const HasPerm = (props, organization) => {
                 }
             })();
         } else {
-            firebase.ref(`/org/${org}/users/${auth.uid}/scopes`).once("value", (snapshot) => {
-                if (snapshot.exists()) {
-                    if (snapshot.val().includes(perm)) {
-                        setState(Math.random());
+            let tries = 0;
+            function check() {
+                firebase.ref(`/org/${org}/users/${auth.uid}/scopes`).once("value", (snapshot, d) => {
+                    if (snapshot.exists()) {
+                        if (snapshot.val().includes(perm)) {
+                            setState(1);
+                        }
+                    } else if (isEmpty(auth) || !auth) {
+                        auth = getFirebase().auth().currentUser;
+                        setTimeout(check, 100);
+                    } else {
+                        if (tries < 3) {
+                            tries++;
+                            setTimeout(check, 1000);
+                        }
                     }
-                }
-            });
+                });
+            }
+            check();
         }
     }, []);
     if (state === 0) {
